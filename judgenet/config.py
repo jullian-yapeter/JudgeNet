@@ -3,6 +3,9 @@ from judgenet.utils.general import AttrDict
 
 CONFIG = AttrDict()
 
+# Experiment
+CONFIG.exp_dir = "exp/exp_1"
+
 # Dataset/Loader
 CONFIG.train_split = 0.8
 CONFIG.val_split = 0.1
@@ -17,5 +20,5 @@ CONFIG.n_hidden_layers = 3
 CONFIG.dropout_rate = 0.2
 
 #Trainer
-CONFIG.epochs = 1000
+CONFIG.epochs = 100
 CONFIG.lr = 1e-4

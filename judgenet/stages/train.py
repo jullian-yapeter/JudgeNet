@@ -1,19 +1,24 @@
 import copy
+import os
 
 import numpy as np
 import torch
 import torch.optim as optim
 from tqdm import tqdm
 
+from judgenet.values.constants import final_model_filename
+
 
 class Trainer():
     def __init__(self,
+                 exp_dir,
                  model,
                  train_loader,
                  val_loader,
                  epochs,
                  lr
                  ):
+        self.exp_dir=exp_dir
         self.model = model
         self.train_loader = train_loader
         self.val_loader = val_loader
@@ -42,4 +47,6 @@ class Trainer():
             if epoch % (int(self.epochs) / 10) == 0:
                 print(
                     f"ep:{epoch + 1}, loss:{np.mean(ep_losses)}, val_loss:{np.mean(val_losses)}")
+        torch.save(self.model.state_dict(), os.path.join(
+            self.exp_dir, final_model_filename))
         return copy.deepcopy(self.model)

@@ -1,8 +1,13 @@
+import os
+
 from judgenet.modules import metrics
+from judgenet.utils.file import write_json
+from judgenet.values.constants import test_metrics_filename
 
 
 class Tester():
-    def __init__(self, model, test_loader):
+    def __init__(self, exp_dir, model, test_loader):
+        self.exp_dir = exp_dir
         self.model = model.eval()
         self.test_loader = test_loader
         self.metrics = {
@@ -19,4 +24,6 @@ class Tester():
             self.metrics["log_prob"] += metrics.log_prob(pred_dist, labels)
         for metric in self.metrics:
             self.metrics[metric] = self.metrics[metric].item() / len(self.test_loader.dataset)
+        write_json(self.metrics, os.path.join(
+            self.exp_dir, test_metrics_filename))
         return self.metrics

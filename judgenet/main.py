@@ -1,9 +1,12 @@
+import os
+
 import torch
 
 from judgenet.config import CONFIG as cfg
 from judgenet.modules.dataloader import get_split_dataloaders
-from judgenet.stages.train import Trainer
 from judgenet.stages.test import Tester
+from judgenet.stages.train import Trainer
+from judgenet.values.constants import final_model_filename
 
 
 def experiment():
@@ -17,16 +20,28 @@ def experiment():
         hidden_dim=cfg.hidden_dim,
         n_hidden_layers=cfg.n_hidden_layers,
         dropout_rate=cfg.dropout_rate)
-    trained_model = Trainer(model=model,
-                            train_loader=train_loader,
-                            val_loader=val_loader,
-                            epochs=cfg.epochs,
-                            lr=cfg.lr).run()
-    stats = Tester(model=trained_model,
-                   test_loader=test_loader).run()
+    Trainer(
+        exp_dir=cfg.exp_dir,
+        model=model,
+        train_loader=train_loader,
+        val_loader=val_loader,
+        epochs=cfg.epochs,
+        lr=cfg.lr).run()
+    trained_model = cfg.model_class(
+        in_dim=cfg.in_dim,
+        hidden_dim=cfg.hidden_dim,
+        n_hidden_layers=cfg.n_hidden_layers,
+        dropout_rate=cfg.dropout_rate)
+    trained_model.load_state_dict(
+        torch.load(os.path.join(cfg.exp_dir, final_model_filename)))
+    stats = Tester(
+        exp_dir=cfg.exp_dir,
+        model=trained_model,
+        test_loader=test_loader).run()
     print(stats)
 
-if __name__=="__main__":
+
+if __name__ == "__main__":
     print("starting")
     experiment()
     print("finished")
