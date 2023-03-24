@@ -1,4 +1,4 @@
-from judgenet.modules.models import TanhMLENet
+from judgenet.modules.models import MLENet, TanhMLENet
 from judgenet.utils.general import AttrDict
 
 CONFIG = AttrDict()
@@ -10,7 +10,7 @@ CONFIG.batch_size = 128
 CONFIG.feature_dim = 50
 
 # Model
-CONFIG.model_class = TanhMLENet
+CONFIG.model_class = MLENet
 CONFIG.in_dim = CONFIG.feature_dim
 CONFIG.hidden_dim = 32
 CONFIG.n_hidden_layers = 3

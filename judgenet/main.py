@@ -9,6 +9,7 @@ from judgenet.stages.test import Tester
 def experiment():
     # import data and instantiate train and val dataloaders
     data = torch.rand((1000, 51))
+    data[:, -1] = torch.randint(low=0, high=2, size=(1000,))
     train_loader, val_loader, test_loader = get_split_dataloaders(
         data, batch_size=cfg.batch_size, train=cfg.train_split, val=cfg.val_split)
     model = cfg.model_class(
