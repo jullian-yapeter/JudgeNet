@@ -6,6 +6,7 @@ from judgenet.config import CONFIG as cfg
 from judgenet.modules.dataloader import get_split_dataloaders
 from judgenet.stages.test import Tester
 from judgenet.stages.train import Trainer
+from judgenet.utils.general import Timer
 from judgenet.values.constants import final_model_filename
 
 
@@ -21,6 +22,7 @@ def experiment():
         n_hidden_layers=cfg.n_hidden_layers,
         dropout_rate=cfg.dropout_rate)
     Trainer(
+        exp_name=cfg.exp_name,
         exp_dir=cfg.exp_dir,
         model=model,
         train_loader=train_loader,
@@ -33,8 +35,9 @@ def experiment():
         n_hidden_layers=cfg.n_hidden_layers,
         dropout_rate=cfg.dropout_rate)
     trained_model.load_state_dict(
-        torch.load(os.path.join(cfg.exp_dir, final_model_filename)))
+        torch.load(os.path.join(cfg.exp_dir, f"{cfg.exp_name}_{final_model_filename}")))
     stats = Tester(
+        exp_name=cfg.exp_name,
         exp_dir=cfg.exp_dir,
         model=trained_model,
         test_loader=test_loader).run()
@@ -42,6 +45,5 @@ def experiment():
 
 
 if __name__ == "__main__":
-    print("starting")
-    experiment()
-    print("finished")
+    with Timer(cfg.exp_name):
+        experiment()

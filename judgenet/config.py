@@ -4,6 +4,7 @@ from judgenet.utils.general import AttrDict
 CONFIG = AttrDict()
 
 # Experiment
+CONFIG.exp_name = "mle"
 CONFIG.exp_dir = "exp/exp_1"
 
 # Dataset/Loader
@@ -20,5 +21,5 @@ CONFIG.n_hidden_layers = 3
 CONFIG.dropout_rate = 0.2
 
 #Trainer
-CONFIG.epochs = 100
+CONFIG.epochs = 200
 CONFIG.lr = 1e-4

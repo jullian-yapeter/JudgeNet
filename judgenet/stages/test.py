@@ -6,7 +6,8 @@ from judgenet.values.constants import test_metrics_filename
 
 
 class Tester():
-    def __init__(self, exp_dir, model, test_loader):
+    def __init__(self, exp_name, exp_dir, model, test_loader):
+        self.exp_name = exp_name
         self.exp_dir = exp_dir
         self.model = model.eval()
         self.test_loader = test_loader
@@ -25,5 +26,5 @@ class Tester():
         for metric in self.metrics:
             self.metrics[metric] = self.metrics[metric].item() / len(self.test_loader.dataset)
         write_json(self.metrics, os.path.join(
-            self.exp_dir, test_metrics_filename))
+            self.exp_dir, f"{self.exp_name}_{test_metrics_filename}"))
         return self.metrics
