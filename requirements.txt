@@ -1,5 +1,4 @@
--e git+ssh://git@github.com/jullian-yapeter/JudgeNet.git@da75efcac0751086082467c12dcc189272e2d359#egg=judgenet
-numpy==1.24.2
-torch==2.0.0
--e git+ssh://git@github.com/pytorch/rl.git@69ff6a64c13cf1efdf20478efde36864f63b91be#egg=torchrl
-tqdm==4.65.0
+numpy
+torch
+tqdm
+transformers
