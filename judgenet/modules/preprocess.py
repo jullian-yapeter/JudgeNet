@@ -21,10 +21,10 @@ class SentenceEncoder():
         )
     
     def encode_batched_tokens(self, tokens):
-        return self.model(
+        return torch.mean(self.model(
             input_ids=tokens["input_ids"],
             attention_mask=tokens["attention_mask"]
-        ).last_hidden_state[:, 0, :]
+        ).last_hidden_state[:, 0, :], dim=0)
 
 
 if __name__=="__main__":
