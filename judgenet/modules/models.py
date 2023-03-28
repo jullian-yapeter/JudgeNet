@@ -161,3 +161,13 @@ class JudgeNetSharedDecoder(nn.Module):
             )
         loss = alpha * prediction_loss + (1 - alpha) * teacher_student_loss
         return loss
+    
+    def predict(self, x, mode="lexical"):
+        with torch.no_grad():
+            if mode == "multimodal":
+                emb = self.multimodal_encoder(x)
+            else:
+                start_idx, end_idx = self.unimodal_indices[mode]
+                x = x[:, start_idx: end_idx]
+                emb = self.unimodal_encoders[mode](x)
+            return torch.argmax(self.predictor(emb), dim=-1)
