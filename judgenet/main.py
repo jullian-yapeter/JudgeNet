@@ -9,13 +9,12 @@ from judgenet.stages.train import Trainer
 from judgenet.utils.general import Timer
 from judgenet.values.constants import final_model_filename
 
-
 def experiment():
     # import data and instantiate train and val dataloaders
     data = torch.rand((1000, 51))
     data[:, -1] = torch.randint(low=0, high=2, size=(1000,))
     train_loader, val_loader, test_loader = get_split_dataloaders(
-        data, batch_size=cfg.batch_size, train=cfg.train_split, val=cfg.val_split)
+        data, dataset_class=cfg.dataset_class, batch_size=cfg.batch_size, train=cfg.train_split, val=cfg.val_split)
     model = cfg.model_class(
         in_dim=cfg.in_dim,
         hidden_dim=cfg.hidden_dim,

@@ -1,5 +1,6 @@
 from judgenet.modules.models import MLENet, TanhMLENet
 from judgenet.utils.general import AttrDict
+from judgenet.modules.dataloader import BasicDataset
 
 CONFIG = AttrDict()
 
@@ -15,6 +16,7 @@ CONFIG.feature_dim = 50
 
 # Model
 CONFIG.model_class = MLENet
+CONFIG.dataset_class = BasicDataset
 CONFIG.in_dim = CONFIG.feature_dim
 CONFIG.hidden_dim = 32
 CONFIG.n_hidden_layers = 3
