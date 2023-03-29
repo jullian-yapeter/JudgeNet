@@ -1,3 +1,4 @@
+import copy
 from typing import List
 
 import torch
@@ -8,13 +9,14 @@ from torchrl.modules import TanhNormal
 
 
 class LinearNet(nn.Module):
-    def __init__(self,
-                 in_dim: int,
-                 out_dim: int,
-                 hidden_dim: int,
-                 n_hidden_layers: int,
-                 dropout_rate: float,
-                 device=None):
+    def __init__(
+            self,
+            in_dim: int,
+            out_dim: int,
+            hidden_dim: int,
+            n_hidden_layers: int,
+            dropout_rate: float,
+            device=None):
         super().__init__()
         # self.device = torch.device(
         #     'mps' if torch.backends.mps.is_available() else 'cpu')
@@ -49,12 +51,13 @@ class LinearNet(nn.Module):
 
 
 class MLENet(nn.Module):
-    def __init__(self,
-                 in_dim: int,
-                 hidden_dim: int,
-                 n_hidden_layers: int,
-                 dropout_rate: float,
-                 device=None):
+    def __init__(
+            self,
+            in_dim: int,
+            hidden_dim: int,
+            n_hidden_layers: int,
+            dropout_rate: float,
+            device=None):
         super().__init__()
         self.device = torch.device('cpu') if device is None else device
         self.linearNet = LinearNet(in_dim,
@@ -92,21 +95,56 @@ class TanhMLENet(MLENet):
         return TanhNormal(mu, log_sigma.exp(), min=0.0, max=1.0)
 
 
-class JudgeNetSharedDecoder(nn.Module):
+class JudgeNetAE(nn.Module):
 
-    def __init__(self,
-                 in_names: List[str],
-                 in_dims: List[int],
-                 out_dim: int,
-                 emb_dim: int,
-                 hidden_dim: int,
-                 n_hidden_layers: int,
-                 dropout_rate: float,
-                 device=None):
-        assert len(in_names) == len(in_dims), "Length of names does not match length of in dims"
+    def __init__(
+            self,
+            in_dim: int,
+            emb_dim: int,
+            hidden_dim: int,
+            n_hidden_layers: int,
+            dropout_rate: float,
+            device=None):
         super().__init__()
         self.device = torch.device('cpu') if device is None else device
-        self.in_names = in_names
+        self.multimodal_encoder = LinearNet(
+            in_dim=in_dim,
+            out_dim=emb_dim,
+            hidden_dim=hidden_dim,
+            n_hidden_layers=n_hidden_layers,
+            dropout_rate=dropout_rate
+        )
+        self.multimodal_decoder = LinearNet(
+            in_dim=emb_dim,
+            out_dim=in_dim,
+            hidden_dim=hidden_dim,
+            n_hidden_layers=n_hidden_layers,
+            dropout_rate=dropout_rate
+        )
+        self.mse_loss = nn.MSELoss(reduction='mean')
+
+    def forward(self, x):
+        x = x.to(self.device)
+        return self.multimodal_decoder(self.multimodal_encoder(x))
+
+    def loss(self, pred, original):
+        return self.mse_loss(pred, original)
+    
+
+class JudgeNetDistill(nn.Module):
+
+    def __init__(
+            self,
+            in_names: List[str],
+            in_dims: List[int],
+            emb_dim: int,
+            hidden_dim: int,
+            n_hidden_layers: int,
+            dropout_rate: float,
+            multimodal_encoder: nn.Module,
+            device=None):
+        super().__init__()
+        self.device = torch.device('cpu') if device is None else device
         self.unimodal_encoders = nn.ModuleDict()
         self.unimodal_indices = {}
         cur_index = 0
@@ -120,13 +158,53 @@ class JudgeNetSharedDecoder(nn.Module):
                 n_hidden_layers=n_hidden_layers,
                 dropout_rate=dropout_rate
             )
-        self.multimodal_encoder = LinearNet(
-            in_dim=sum(in_dims),
-            out_dim=emb_dim,
-            hidden_dim=hidden_dim,
-            n_hidden_layers=n_hidden_layers,
-            dropout_rate=dropout_rate
-        )
+        self.multimodal_encoder = multimodal_encoder.eval()
+        self.mse_loss = nn.MSELoss(reduction='mean')
+
+    def forward(self, x):
+        x = x.to(self.device)
+        outputs = {}
+        for name in self.unimodal_encoders:
+            start_idx, end_idx = self.unimodal_indices[name]
+            unimodal_input = x[:, start_idx: end_idx]
+            outputs[name] = self.unimodal_encoders[name](unimodal_input)
+        with torch.no_grad():
+            multimodal_emb = self.multimodal_encoder(x)
+        outputs["multimodal"] = multimodal_emb
+        return outputs
+
+    def loss(self, outputs):
+        loss = 0
+        multimodal_emb = outputs["multimodal"].detach()
+        for name in self.unimodal_encoders:
+            loss += self.mse_loss(
+                outputs[name].to(self.device), multimodal_emb
+            )
+        return loss
+
+
+class JudgeNetSharedDecoder(nn.Module):
+
+    def __init__(
+            self,
+            in_names: List[str],
+            in_dims: List[int],
+            emb_dim: int,
+            out_dim: int,
+            hidden_dim: int,
+            n_hidden_layers: int,
+            dropout_rate: float,
+            multimodal_encoder: nn.Module,
+            unimodal_encoders: nn.Module,
+            device=None):
+        super().__init__()
+        self.device = torch.device('cpu') if device is None else device
+        self.unimodal_indices = {}
+        cur_index = 0
+        for in_name, in_dim in zip(in_names, in_dims):
+            self.unimodal_indices[in_name] = (cur_index, cur_index + in_dim)
+        self.unimodal_encoders = unimodal_encoders.train()
+        self.multimodal_encoder = multimodal_encoder.train()
         self.predictor = LinearNet(
             in_dim=emb_dim,
             out_dim=out_dim,
@@ -140,7 +218,7 @@ class JudgeNetSharedDecoder(nn.Module):
     def forward(self, x):
         x = x.to(self.device)
         outputs = {}
-        for name in self.in_names:
+        for name in self.unimodal_encoders:
             start_idx, end_idx = self.unimodal_indices[name]
             unimodal_input = x[:, start_idx: end_idx]
             outputs[name] = self.unimodal_encoders[name](unimodal_input)
@@ -155,7 +233,7 @@ class JudgeNetSharedDecoder(nn.Module):
         )
         teacher_student_loss = 0
         multimodal_emb = outputs["multimodal"].detach()
-        for name in self.in_names:
+        for name in self.unimodal_encoders:
             teacher_student_loss += self.mse_loss(
                 outputs[name].to(self.device), multimodal_emb
             )
@@ -171,3 +249,56 @@ class JudgeNetSharedDecoder(nn.Module):
                 x = x[:, start_idx: end_idx]
                 emb = self.unimodal_encoders[mode](x)
             return torch.argmax(self.predictor(emb), dim=-1)
+
+
+class JudgeNetFinetune(nn.Module):
+
+    def __init__(
+            self,
+            student_encoder: nn.Module,
+            teacher_encoder: nn.Module,
+            predictor: nn.Module,
+            device=None):
+        super().__init__()
+        self.device = torch.device('cpu') if device is None else device
+        self.student_encoder = student_encoder.train()
+        self.teacher_encoder = teacher_encoder.eval()
+        self.orig_predictor = copy.deepcopy(predictor).eval()
+        self.predictor = predictor.train()
+        self.ce_loss = nn.CrossEntropyLoss(reduction="mean")
+        self.mse_loss = nn.MSELoss(reduction='mean')
+
+    def forward(self, x):
+        x = x.to(self.device)
+        outputs = {}
+        for name in self.unimodal_encoders:
+            start_idx, end_idx = self.unimodal_indices[name]
+            unimodal_input = x[:, start_idx: end_idx]
+            outputs[name] = self.unimodal_encoders[name](unimodal_input)
+        multimodal_emb = self.multimodal_encoder(x)
+        outputs["multimodal"] = multimodal_emb
+        outputs["prediction"] = self.predictor(multimodal_emb)
+        return outputs
+
+    # def loss(self, outputs, label):
+    #     prediction_loss = self.ce_loss(
+    #         outputs["prediction"].to(self.device), label.to(self.device)
+    #     )
+    #     teacher_student_loss = 0
+    #     multimodal_emb = outputs["multimodal"].detach()
+    #     for name in self.unimodal_encoders:
+    #         teacher_student_loss += self.mse_loss(
+    #             outputs[name].to(self.device), multimodal_emb
+    #         )
+    #     loss = alpha * prediction_loss + (1 - alpha) * teacher_student_loss
+    #     return loss
+
+    # def predict(self, x, mode="lexical"):
+    #     with torch.no_grad():
+    #         if mode == "multimodal":
+    #             emb = self.multimodal_encoder(x)
+    #         else:
+    #             start_idx, end_idx = self.unimodal_indices[mode]
+    #             x = x[:, start_idx: end_idx]
+    #             emb = self.unimodal_encoders[mode](x)
+    #         return torch.argmax(self.predictor(emb), dim=-1)

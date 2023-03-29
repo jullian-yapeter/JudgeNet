@@ -35,8 +35,8 @@ class Trainer():
             self.model.train()
             for features, labels in self.train_loader:
                 self.optimizer.zero_grad()
-                pred_dist = self.model(features)
-                loss = self.model.loss(pred_dist, labels)
+                pred = self.model(features)
+                loss = self.model.loss(pred, labels)
                 ep_losses.append(loss.item())
                 loss.backward()
                 self.optimizer.step()
@@ -44,8 +44,8 @@ class Trainer():
             with torch.no_grad():
                 val_losses = []
                 for features, labels in self.val_loader:
-                    pred_dist = self.model(features)
-                    loss = self.model.loss(pred_dist, labels)
+                    pred = self.model(features)
+                    loss = self.model.loss(pred, labels)
                     val_losses.append(loss.item())
             if epoch % (int(self.epochs) / 10) == 0:
                 print(
