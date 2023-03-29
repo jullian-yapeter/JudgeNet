@@ -51,9 +51,15 @@ class TedDataset(Dataset):
 
 class MITInterviewDataset(Dataset):
     def __init__(self, folder_path):
-        scores = pd.read_csv(f"{folder_path}/Labels/turker_scores_full_interview.csv")
-        transcripts = pd.read_csv(f"{folder_path}/Labels/interview_transcripts_by_turkers.csv")
-        prosody_features = pd.read_csv(f"{folder_path}/prosodic_features.csv")
+        self.scores = torch.load(f"data/mit_interview/features/scores.pt")
+        self.lexical_features = torch.load(f"data/mit_interview/features/prosody.pt")
+        self.prosody_features = torch.load(f"data/mit_interview/features/lexical.pt")
+    
+    def __len__(self):
+        return len(self.scores)
+    
+    def __getitem__(self, index):
+        return torch.cat((self.lexical_features[index], self.prosody_features[index]),dim=-1).to(torch.float), self.scores[index]
 
         
 
