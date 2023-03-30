@@ -4,7 +4,7 @@ import torch
 
 from judgenet.config_ted import CONFIG as cfg
 from judgenet.modules.dataloader import get_split_dataloaders
-from judgenet.stages.test import TesterTed
+from judgenet.stages.test import TesterClassification
 from judgenet.stages.train import Trainer
 from judgenet.stages.pretrain import MultimodalPretrainer, UnimodalPretrainer
 from judgenet.utils.general import Timer
@@ -83,7 +83,7 @@ def TED_experiment():
         val_loader=val_loader,
         epochs=cfg.epochs,
         lr=cfg.lr).run()
-    stats = TesterTed(
+    stats = TesterClassification(
         exp_name=cfg.exp_name,
         exp_dir=cfg.exp_dir,
         model=predictor_net.eval(),

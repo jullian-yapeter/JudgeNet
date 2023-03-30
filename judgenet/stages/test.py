@@ -32,7 +32,7 @@ class Tester():
         return self.metrics
 
 
-class TesterTed():
+class TesterClassification():
     def __init__(self, exp_name, exp_dir, model, test_loader):
         self.exp_name = exp_name
         self.exp_dir = exp_dir

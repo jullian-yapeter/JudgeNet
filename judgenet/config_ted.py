@@ -1,12 +1,12 @@
 from judgenet.modules.models import JudgeNetAE, JudgeNetSharedDecoder, JudgeNetDistill
 from judgenet.utils.general import AttrDict
-from judgenet.modules.dataloader import BasicDataset, TedDataset
+from judgenet.modules.dataloader import TedDataset
 
 CONFIG = AttrDict()
 
 # Experiment
 CONFIG.exp_name = "ted"
-CONFIG.exp_dir = "exp/exp_2"
+CONFIG.exp_dir = "exp/exp_ted"
 
 # Dataset/Loader
 CONFIG.train_split = 0.4

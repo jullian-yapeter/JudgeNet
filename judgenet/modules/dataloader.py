@@ -2,6 +2,7 @@ from torch.utils.data import Dataset, DataLoader
 
 from judgenet.utils.data import split_dataset
 import pandas as pd
+import numpy as np
 import torch
 
 
@@ -50,21 +51,90 @@ class TedDataset(Dataset):
         
 
 class MITInterviewDataset(Dataset):
-    def __init__(self, folder_path):
-        self.scores = torch.load(f"data/mit_interview/features/scores.pt")
-        self.lexical_features = torch.load(f"data/mit_interview/features/prosody.pt")
-        self.prosody_features = torch.load(f"data/mit_interview/features/lexical.pt")
+    def __init__(self):
+        self.scores = torch.load("data/mit_interview/features/scores.pt")
+        self.lexical_features = torch.load("data/mit_interview/features/prosody.pt")
+        self.prosody_features = torch.load("data/mit_interview/features/lexical.pt")
     
     def __len__(self):
         return len(self.scores)
     
     def __getitem__(self, index):
-        return torch.cat((self.lexical_features[index], self.prosody_features[index]),dim=-1).to(torch.float), self.scores[index]
+        score = self.scores[index]
+        if score > 5.14:
+            label = 1
+        else:
+            label = 0
 
-        
+        return torch.cat((self.lexical_features[index], self.prosody_features[index]),dim=-1).to(torch.float), label
+    
+class IEMOCAPDataset(object):
+    def __init__(self, indices=[]):
+        dataset = pd.read_csv("data/dataset_balanced.csv")
+        # Use only the indices passed in, either train or test
+        if len(indices):
+            self.dataset = dataset.iloc[indices]
+        else:
+            self.dataset = dataset
+        self.cache = {}
+
+    def __len__(self):
+        return len(self.dataset)
+    
+    # Perform pooling over visual features here
+    def __getitem__(self, index):
+        # First check cache for this index
+        if index in self.cache:
+            speaker = self.cache[index]["speaker"]
+            visual_features_pooled = self.cache[index]["visual_features"]
+            acoustic_features_pooled = self.cache[index]["acoustic_features"]
+            lexical_features = self.cache[index]["lexical_features"]
+            label = self.cache[index]["label"]
+
+            return speaker, visual_features_pooled, acoustic_features_pooled, lexical_features, label
+
+        # If not in cache, get features from this row
+        else:
+            row = self.dataset.iloc[index]
+
+            speaker = row["speakers"]
+            visual_features = np.load(row["visual_features"][1:])
+
+            # Perform mean pooling on visual features
+            visual_features_pooled = np.zeros(visual_features.shape[1], dtype="float32")
+            visual_frame_count = visual_features.shape[0]
+            for i in range(visual_frame_count):
+                frame = visual_features[i]
+                visual_features_pooled += frame
+            visual_features_pooled /= visual_frame_count
+    
+            acoustic_features = np.load(row["acoustic_features"][1:])
+
+            # Perform mean pooling on acoustic features
+            acoustic_features_pooled = np.zeros(acoustic_features.shape[1], dtype="float32")
+            acoustic_frame_count = acoustic_features.shape[0]
+            for i in range(acoustic_frame_count):
+                frame = acoustic_features[i]
+                acoustic_features_pooled += frame
+            acoustic_features_pooled /= acoustic_frame_count
+
+            lexical_features = np.load(row["lexical_features"][1:])
+            label = row["emotion_labels"]
+
+            # Add row to cache
+            self.cache[index] = {
+                "speaker": speaker,
+                "visual_features": visual_features_pooled,
+                "acoustic_features": acoustic_features_pooled,
+                "lexical_features": lexical_features,
+                "label": label
+            }
+
+            return speaker, visual_features_pooled, acoustic_features_pooled, lexical_features, label
+
 
 def get_split_dataloaders(data, dataset_class, batch_size, train=0.8, val=None):
-    if dataset_class == TedDataset:
+    if dataset_class == TedDataset or dataset_class == MITInterviewDataset:
         dataset = dataset_class()
     else:
         dataset = dataset_class(data)
