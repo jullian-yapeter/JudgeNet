@@ -1,6 +1,7 @@
-from judgenet.modules.models import JudgeNetAE, JudgeNetSharedDecoder, JudgeNetDistill
-from judgenet.utils.general import AttrDict
 from judgenet.modules.dataloader import BasicDataset, TedDataset
+from judgenet.modules.models import (JudgeNetAE, JudgeNetDistill,
+                                     JudgeNetFinetune, JudgeNetSharedDecoder)
+from judgenet.utils.general import AttrDict
 
 CONFIG = AttrDict()
 
@@ -20,9 +21,11 @@ CONFIG.feature_dim = CONFIG.lexical_dim + CONFIG.prosody_dim
 CONFIG.multimodal_ae_class = JudgeNetAE
 CONFIG.distill_net_class = JudgeNetDistill
 CONFIG.predictor_class = JudgeNetSharedDecoder
+CONFIG.finetune_class = JudgeNetFinetune
 CONFIG.dataset_class = TedDataset
 CONFIG.in_names = ["lexical", "prosody"]
 CONFIG.in_dims = [CONFIG.lexical_dim, CONFIG.prosody_dim]
+CONFIG.finetune_modality = "lexical"
 CONFIG.out_dim = 2
 CONFIG.hidden_dim = 64
 CONFIG.emb_dim = 32

@@ -178,7 +178,7 @@ class JudgeNetDistill(nn.Module):
         multimodal_emb = outputs["multimodal"].detach()
         for name in self.unimodal_encoders:
             loss += self.mse_loss(
-                outputs[name].to(self.device), multimodal_emb
+                outputs[name], multimodal_emb
             )
         return loss
 
@@ -229,15 +229,15 @@ class JudgeNetSharedDecoder(nn.Module):
 
     def loss(self, outputs, label, alpha=0.5):
         prediction_loss = self.ce_loss(
-            outputs["prediction"].to(self.device), label.to(self.device)
+            outputs["prediction"], label
         )
         teacher_student_loss = 0
         multimodal_emb = outputs["multimodal"].detach()
         for name in self.unimodal_encoders:
             teacher_student_loss += self.mse_loss(
-                outputs[name].to(self.device), multimodal_emb
+                outputs[name], multimodal_emb
             )
-        loss = alpha * prediction_loss + (1 - alpha) * teacher_student_loss
+        loss = prediction_loss + alpha * teacher_student_loss
         return loss
     
     def predict(self, x, mode="lexical"):
@@ -255,15 +255,22 @@ class JudgeNetFinetune(nn.Module):
 
     def __init__(
             self,
-            student_encoder: nn.Module,
-            teacher_encoder: nn.Module,
+            in_names: List[str],
+            in_dims: List[int],
+            multimodal_encoder: nn.Module,
+            unimodal_encoders: nn.Module,
             predictor: nn.Module,
+            finetune_modality: str = "lexical",
             device=None):
         super().__init__()
         self.device = torch.device('cpu') if device is None else device
-        self.student_encoder = student_encoder.train()
-        self.teacher_encoder = teacher_encoder.eval()
-        self.orig_predictor = copy.deepcopy(predictor).eval()
+        self.finetune_modality = finetune_modality
+        self.unimodal_indices = {}
+        cur_index = 0
+        for in_name, in_dim in zip(in_names, in_dims):
+            self.unimodal_indices[in_name] = (cur_index, cur_index + in_dim)
+        self.multimodal_encoder = multimodal_encoder.eval()
+        self.unimodal_encoders = unimodal_encoders.train()
         self.predictor = predictor.train()
         self.ce_loss = nn.CrossEntropyLoss(reduction="mean")
         self.mse_loss = nn.MSELoss(reduction='mean')
@@ -271,34 +278,33 @@ class JudgeNetFinetune(nn.Module):
     def forward(self, x):
         x = x.to(self.device)
         outputs = {}
-        for name in self.unimodal_encoders:
-            start_idx, end_idx = self.unimodal_indices[name]
-            unimodal_input = x[:, start_idx: end_idx]
-            outputs[name] = self.unimodal_encoders[name](unimodal_input)
-        multimodal_emb = self.multimodal_encoder(x)
+        with torch.no_grad():
+            multimodal_emb = self.multimodal_encoder(x)
+        start_idx, end_idx = self.unimodal_indices[self.finetune_modality]
+        unimodal_input = x[:, start_idx: end_idx]
+        unimodal_emb = self.unimodal_encoders[self.finetune_modality](
+            unimodal_input)
         outputs["multimodal"] = multimodal_emb
-        outputs["prediction"] = self.predictor(multimodal_emb)
+        outputs["unimodal"] = unimodal_emb
+        outputs["prediction"] = self.predictor(unimodal_emb)
         return outputs
 
-    # def loss(self, outputs, label):
-    #     prediction_loss = self.ce_loss(
-    #         outputs["prediction"].to(self.device), label.to(self.device)
-    #     )
-    #     teacher_student_loss = 0
-    #     multimodal_emb = outputs["multimodal"].detach()
-    #     for name in self.unimodal_encoders:
-    #         teacher_student_loss += self.mse_loss(
-    #             outputs[name].to(self.device), multimodal_emb
-    #         )
-    #     loss = alpha * prediction_loss + (1 - alpha) * teacher_student_loss
-    #     return loss
+    def loss(self, outputs, label, alpha=0.5):
+        prediction_loss = self.ce_loss(
+            outputs["prediction"], label
+        )
+        teacher_student_loss = self.mse_loss(
+            outputs["unimodal"], outputs["multimodal"].detach()
+        )
+        loss = prediction_loss + alpha * teacher_student_loss
+        return loss
 
-    # def predict(self, x, mode="lexical"):
-    #     with torch.no_grad():
-    #         if mode == "multimodal":
-    #             emb = self.multimodal_encoder(x)
-    #         else:
-    #             start_idx, end_idx = self.unimodal_indices[mode]
-    #             x = x[:, start_idx: end_idx]
-    #             emb = self.unimodal_encoders[mode](x)
-    #         return torch.argmax(self.predictor(emb), dim=-1)
+    def predict(self, x, mode="lexical"):
+        with torch.no_grad():
+            if mode == "multimodal":
+                emb = self.multimodal_encoder(x)
+            else:
+                start_idx, end_idx = self.unimodal_indices[mode]
+                x = x[:, start_idx: end_idx]
+                emb = self.unimodal_encoders[mode](x)
+            return torch.argmax(self.predictor(emb), dim=-1)
