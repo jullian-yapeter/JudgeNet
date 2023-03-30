@@ -8,6 +8,8 @@ CONFIG = AttrDict()
 # Experiment
 CONFIG.exp_name = "ted"
 CONFIG.exp_dir = "exp/exp_ted"
+CONFIG.use_pretrain = False
+CONFIG.use_finetune = False
 
 # Dataset/Loader
 CONFIG.train_split = 0.4

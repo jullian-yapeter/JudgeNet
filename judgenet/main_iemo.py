@@ -1,4 +1,4 @@
-from judgenet.config_mit import CONFIG as cfg
+from judgenet.config_iemo import CONFIG as cfg
 from judgenet.modules.dataloader import get_split_dataloaders
 from judgenet.stages.test import TesterClassification
 from judgenet.stages.train import Trainer
@@ -8,7 +8,7 @@ from judgenet.utils.general import Timer
 from judgenet.modules.models import LinearNet
 from torch import nn
 
-def MIT_experiment():
+def IEMO_experiment():
 
     # Initialize dataloaders
     train_loader, val_loader, test_loader = get_split_dataloaders(
@@ -18,7 +18,7 @@ def MIT_experiment():
         train=cfg.train_split,
         val=cfg.val_split
     )
-
+    
     if cfg.use_pretrain:
         # Initialize and pre-train multimodal components
         multimodal_ae = cfg.multimodal_ae_class(
@@ -143,4 +143,4 @@ def MIT_experiment():
 
 if __name__ == "__main__":
     with Timer(cfg.exp_name):
-        MIT_experiment()
+        IEMO_experiment()

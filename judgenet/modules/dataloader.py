@@ -69,13 +69,8 @@ class MITInterviewDataset(Dataset):
         return torch.cat((self.lexical_features[index], self.prosody_features[index]),dim=-1).to(torch.float), label
     
 class IEMOCAPDataset(object):
-    def __init__(self, indices=[]):
-        dataset = pd.read_csv("data/dataset_balanced.csv")
-        # Use only the indices passed in, either train or test
-        if len(indices):
-            self.dataset = dataset.iloc[indices]
-        else:
-            self.dataset = dataset
+    def __init__(self):
+        self.dataset = pd.read_csv("data/iemocap/dataset_balanced.csv")
         self.cache = {}
 
     def __len__(self):
@@ -85,56 +80,51 @@ class IEMOCAPDataset(object):
     def __getitem__(self, index):
         # First check cache for this index
         if index in self.cache:
-            speaker = self.cache[index]["speaker"]
-            visual_features_pooled = self.cache[index]["visual_features"]
-            acoustic_features_pooled = self.cache[index]["acoustic_features"]
-            lexical_features = self.cache[index]["lexical_features"]
-            label = self.cache[index]["label"]
-
-            return speaker, visual_features_pooled, acoustic_features_pooled, lexical_features, label
+            return self.cache[index]
 
         # If not in cache, get features from this row
         else:
             row = self.dataset.iloc[index]
 
             speaker = row["speakers"]
-            visual_features = np.load(row["visual_features"][1:])
+            visual_features = np.load("data/iemocap/" + row["visual_features"][1:])
 
             # Perform mean pooling on visual features
-            visual_features_pooled = np.zeros(visual_features.shape[1], dtype="float32")
-            visual_frame_count = visual_features.shape[0]
-            for i in range(visual_frame_count):
-                frame = visual_features[i]
-                visual_features_pooled += frame
-            visual_features_pooled /= visual_frame_count
+            visual_features_pooled = np.mean(visual_features, axis=0)
+            
+            # np.zeros(visual_features.shape[1], dtype="float32")
+            # visual_frame_count = visual_features.shape[0]
+            # for i in range(visual_frame_count):
+            #     frame = visual_features[i]
+            #     visual_features_pooled += frame
+            # visual_features_pooled /= visual_frame_count
     
-            acoustic_features = np.load(row["acoustic_features"][1:])
+            acoustic_features = np.load("data/iemocap/" + row["acoustic_features"][1:])
 
             # Perform mean pooling on acoustic features
-            acoustic_features_pooled = np.zeros(acoustic_features.shape[1], dtype="float32")
-            acoustic_frame_count = acoustic_features.shape[0]
-            for i in range(acoustic_frame_count):
-                frame = acoustic_features[i]
-                acoustic_features_pooled += frame
-            acoustic_features_pooled /= acoustic_frame_count
+            acoustic_features_pooled = np.mean(acoustic_features, axis=0)
+            # acoustic_features_pooled = np.zeros(acoustic_features.shape[1], dtype="float32")
+            # acoustic_frame_count = acoustic_features.shape[0]
+            # for i in range(acoustic_frame_count):
+            #     frame = acoustic_features[i]
+            #     acoustic_features_pooled += frame
+            # acoustic_features_pooled /= acoustic_frame_count
 
-            lexical_features = np.load(row["lexical_features"][1:])
+            lexical_features = np.load("data/iemocap/" + row["lexical_features"][1:])
             label = row["emotion_labels"]
 
-            # Add row to cache
-            self.cache[index] = {
-                "speaker": speaker,
-                "visual_features": visual_features_pooled,
-                "acoustic_features": acoustic_features_pooled,
-                "lexical_features": lexical_features,
-                "label": label
-            }
+            lexical_tensor = torch.from_numpy(lexical_features)
+            acoustic_tensor = torch.from_numpy(acoustic_features_pooled)
+            visual_tensor = torch.from_numpy(visual_features_pooled)
+            features = torch.cat([lexical_tensor, acoustic_tensor, visual_tensor], dim=-1).to(torch.float)
 
-            return speaker, visual_features_pooled, acoustic_features_pooled, lexical_features, label
+            # Add row to cache
+            self.cache[index] = (features, label)
+            return features, label
 
 
 def get_split_dataloaders(data, dataset_class, batch_size, train=0.8, val=None):
-    if dataset_class == TedDataset or dataset_class == MITInterviewDataset:
+    if dataset_class == TedDataset or dataset_class == MITInterviewDataset or dataset_class == IEMOCAPDataset:
         dataset = dataset_class()
     else:
         dataset = dataset_class(data)
