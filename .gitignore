@@ -11,3 +11,4 @@ exp/
 .env/
 data/mit_interview/features/lexical_batched/
 data/iemocap/features
+.DS_Store
