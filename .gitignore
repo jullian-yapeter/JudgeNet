@@ -9,4 +9,5 @@ __pycache__/
 # Experiments
 exp/
 .env/
-data
+data/mit_interview/features/lexical_batched/
+data/iemocap

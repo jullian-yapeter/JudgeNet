@@ -227,7 +227,7 @@ class JudgeNetSharedDecoder(nn.Module):
         outputs["prediction"] = self.predictor(multimodal_emb)
         return outputs
 
-    def loss(self, outputs, label, alpha=0.5):
+    def loss(self, outputs, label, alpha=0.1):
         prediction_loss = self.ce_loss(
             outputs["prediction"], label
         )
@@ -289,7 +289,7 @@ class JudgeNetFinetune(nn.Module):
         outputs["prediction"] = self.predictor(unimodal_emb)
         return outputs
 
-    def loss(self, outputs, label, alpha=0.5):
+    def loss(self, outputs, label, alpha=0.2):
         prediction_loss = self.ce_loss(
             outputs["prediction"], label
         )
