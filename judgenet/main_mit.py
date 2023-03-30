@@ -1,12 +1,11 @@
-from judgenet.config_ted import CONFIG as cfg
+from judgenet.config_mit import CONFIG as cfg
 from judgenet.modules.dataloader import get_split_dataloaders
-from judgenet.stages.pretrain import MultimodalPretrainer, UnimodalPretrainer
 from judgenet.stages.test import TesterClassification
 from judgenet.stages.train import Trainer
+from judgenet.stages.pretrain import MultimodalPretrainer, UnimodalPretrainer
 from judgenet.utils.general import Timer
 
-
-def TED_experiment():
+def MIT_experiment():
 
     # Initialize dataloaders
     train_loader, val_loader, test_loader = get_split_dataloaders(
@@ -88,34 +87,9 @@ def TED_experiment():
     print(stats)
 
     # Finetune unimodal networks
-    multimodal_encoder = predictor_net.multimodal_encoder
     unimodal_encoders = predictor_net.unimodal_encoders
-    predictor = predictor_net.predictor
     
-    finetune_net = cfg.finetune_class(
-        in_names=cfg.in_names,
-        in_dims=cfg.in_dims,
-        multimodal_encoder=multimodal_encoder,
-        unimodal_encoders=unimodal_encoders,
-        predictor=predictor,
-        finetune_modality=cfg.finetune_modality
-    )
-    finetune_net = Trainer(
-        exp_name=cfg.exp_name,
-        exp_dir=cfg.exp_dir,
-        model=finetune_net,
-        train_loader=train_loader,
-        val_loader=val_loader,
-        epochs=cfg.epochs,
-        lr=cfg.lr).run()
-    stats = TesterClassification(
-        exp_name=cfg.exp_name,
-        exp_dir=cfg.exp_dir,
-        model=finetune_net.eval(),
-        test_loader=test_loader).run()
-    print(stats)
-
 
 if __name__ == "__main__":
     with Timer(cfg.exp_name):
-        TED_experiment()
+        MIT_experiment()
