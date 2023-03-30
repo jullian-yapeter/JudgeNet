@@ -182,6 +182,55 @@ class JudgeNetDistill(nn.Module):
             )
         return loss
 
+class JudgeNetEncoderDecoder(nn.Module):
+    def __init__(
+            self,
+            in_dim: int,
+            emb_dim: int,
+            out_dim: int,
+            hidden_dim: int,
+            n_hidden_layers: int,
+            dropout_rate: float,
+            mode: str,
+            device=None):
+        super().__init__()
+        self.device = torch.device('cpu') if device is None else device
+        self.unimodal_indices = {}
+        self.in_dim = in_dim
+        self.encoder = LinearNet(
+            in_dim=in_dim,
+            out_dim=emb_dim,
+            hidden_dim=hidden_dim,
+            n_hidden_layers=n_hidden_layers,
+            dropout_rate=dropout_rate
+        )
+        self.predictor = LinearNet(
+            in_dim=emb_dim,
+            out_dim=out_dim,
+            hidden_dim=hidden_dim,
+            n_hidden_layers=n_hidden_layers,
+            dropout_rate=dropout_rate
+        )
+        self.ce_loss = nn.CrossEntropyLoss(reduction="mean")
+        self.mode = mode
+
+    def forward(self, x):
+        x = x.to(self.device)
+        if self.mode == "lexical":
+            x = x[:,:self.in_dim]
+        return self.predictor(self.encoder(x))
+
+    def loss(self, outputs, label):
+        return self.ce_loss(
+            outputs, label
+        )
+    
+    def predict(self, x):
+        with torch.no_grad():
+            if self.mode == "lexical":
+                x = x[:,:self.in_dim]
+            emb = self.encoder(x)
+            return torch.argmax(self.predictor(emb), dim=-1)
 
 class JudgeNetSharedDecoder(nn.Module):
 

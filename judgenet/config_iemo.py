@@ -1,4 +1,4 @@
-from judgenet.modules.models import JudgeNetAE, JudgeNetSharedDecoder, JudgeNetFinetune, JudgeNetDistill
+from judgenet.modules.models import JudgeNetAE, JudgeNetSharedDecoder, JudgeNetFinetune, JudgeNetDistill, JudgeNetEncoderDecoder
 from judgenet.utils.general import AttrDict
 from judgenet.modules.dataloader import IEMOCAPDataset
 
@@ -7,6 +7,8 @@ CONFIG = AttrDict()
 # Experiment
 CONFIG.exp_name = "iemo"
 CONFIG.exp_dir = "exp/exp_iemo"
+CONFIG.unimodal_baseline = False
+CONFIG.multimodal_baseline = True
 CONFIG.use_pretrain = False
 CONFIG.use_finetune = False
 
@@ -24,6 +26,7 @@ CONFIG.multimodal_ae_class = JudgeNetAE
 CONFIG.distill_net_class = JudgeNetDistill
 CONFIG.predictor_class = JudgeNetSharedDecoder
 CONFIG.finetune_class = JudgeNetFinetune
+CONFIG.baseline_class = JudgeNetEncoderDecoder
 CONFIG.dataset_class = IEMOCAPDataset
 CONFIG.in_names = ["lexical", "prosody", "visual"]
 CONFIG.in_dims = [CONFIG.lexical_dim, CONFIG.prosody_dim, CONFIG.visual_dim]
@@ -35,5 +38,5 @@ CONFIG.n_hidden_layers = 1
 CONFIG.dropout_rate = 0.1
 
 #Trainer
-CONFIG.epochs = 200
+CONFIG.epochs = 20
 CONFIG.lr = 1e-3

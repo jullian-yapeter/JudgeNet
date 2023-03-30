@@ -1,4 +1,4 @@
-from judgenet.modules.models import JudgeNetAE, JudgeNetSharedDecoder, JudgeNetFinetune, JudgeNetDistill
+from judgenet.modules.models import JudgeNetAE, JudgeNetSharedDecoder, JudgeNetFinetune, JudgeNetDistill, JudgeNetEncoderDecoder
 from judgenet.utils.general import AttrDict
 from judgenet.modules.dataloader import MITInterviewDataset
 
@@ -7,6 +7,8 @@ CONFIG = AttrDict()
 # Experiment
 CONFIG.exp_name = "mit"
 CONFIG.exp_dir = "exp/exp_mit"
+CONFIG.unimodal_baseline = True
+CONFIG.multimodal_baseline = True
 CONFIG.use_pretrain = False
 CONFIG.use_finetune = False
 
@@ -23,6 +25,7 @@ CONFIG.multimodal_ae_class = JudgeNetAE
 CONFIG.distill_net_class = JudgeNetDistill
 CONFIG.predictor_class = JudgeNetSharedDecoder
 CONFIG.finetune_class = JudgeNetFinetune
+CONFIG.baseline_class = JudgeNetEncoderDecoder
 CONFIG.dataset_class = MITInterviewDataset
 CONFIG.in_names = ["lexical", "prosody"]
 CONFIG.in_dims = [CONFIG.lexical_dim, CONFIG.prosody_dim]

@@ -44,7 +44,7 @@ class TesterClassification():
 
     def run(self):
         for features, labels in self.test_loader:
-            pred = self.model.predict(features, mode="multimodal")
+            pred = self.model.predict(features)
             self.metrics["accuracy"] += torch.sum(pred == labels)
         for metric in self.metrics:
             self.metrics[metric] = self.metrics[metric].item() / len(self.test_loader.dataset)

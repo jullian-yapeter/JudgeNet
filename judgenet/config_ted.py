@@ -1,6 +1,6 @@
 from judgenet.modules.dataloader import BasicDataset, TedDataset
 from judgenet.modules.models import (JudgeNetAE, JudgeNetDistill,
-                                     JudgeNetFinetune, JudgeNetSharedDecoder)
+                                     JudgeNetFinetune, JudgeNetSharedDecoder, JudgeNetEncoderDecoder)
 from judgenet.utils.general import AttrDict
 
 CONFIG = AttrDict()
@@ -8,6 +8,8 @@ CONFIG = AttrDict()
 # Experiment
 CONFIG.exp_name = "ted"
 CONFIG.exp_dir = "exp/exp_ted"
+CONFIG.unimodal_baseline = True
+CONFIG.multimodal_baseline = False
 CONFIG.use_pretrain = False
 CONFIG.use_finetune = False
 
@@ -24,6 +26,7 @@ CONFIG.multimodal_ae_class = JudgeNetAE
 CONFIG.distill_net_class = JudgeNetDistill
 CONFIG.predictor_class = JudgeNetSharedDecoder
 CONFIG.finetune_class = JudgeNetFinetune
+CONFIG.baseline_class = JudgeNetEncoderDecoder
 CONFIG.dataset_class = TedDataset
 CONFIG.in_names = ["lexical", "prosody"]
 CONFIG.in_dims = [CONFIG.lexical_dim, CONFIG.prosody_dim]
