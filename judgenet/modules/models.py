@@ -3,6 +3,7 @@ from typing import List
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch.distributions.independent import Independent
 from torch.distributions.normal import Normal
 from torchrl.modules import TanhNormal
@@ -231,6 +232,33 @@ class JudgeNetEncoderDecoder(nn.Module):
                 x = x[:,:self.in_dim]
             emb = self.encoder(x)
             return torch.argmax(self.predictor(emb), dim=-1)
+
+
+class KnowledgeDistiller(nn.Module):
+
+    def __init__(self, student, teacher):
+        super().__init__()
+        self.student = student
+        self.teacher = teacher
+        self.student.train()
+        self.teacher.eval()
+
+    def forward(self, x):
+        x = x.to(self.device)
+        outputs = {}
+        outputs["student"] = self.student(x)
+        with torch.no_grad():
+            outputs["teacher"] = self.teacher(x)
+        return outputs
+
+    def loss(self, outputs, label, temperature=7, alpha=0.3):
+        p = F.log_softmax(outputs["student"]/temperature, dim=1)
+        q = F.softmax(outputs["teacher"]/temperature, dim=1)
+        l_kl = F.kl_div(p, q, size_average=False) * \
+            (temperature**2) / outputs["student"].shape[0]
+        l_ce = F.cross_entropy(outputs["student"], label)
+        return l_kl * alpha + l_ce * (1. - alpha)
+
 
 class JudgeNetSharedDecoder(nn.Module):
 
