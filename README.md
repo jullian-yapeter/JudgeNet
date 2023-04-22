@@ -13,3 +13,9 @@ python3 -m pip install -e .
 cd ../JudgeNet
 python3 judgenet/main.py
 ```
+
+# Data Pipelines
+To run the ted pipeline picking up from the current highwatermark, run
+```
+python data_processing/ted_pipeline/main.py
+```
