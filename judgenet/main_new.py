@@ -168,6 +168,7 @@ predictor = PredictorClassification(
 
 
 if cfg.use_pretrain:
+
     # Stage 1
     stage1 = Stage1(
         mm_encoder=mm_encoder,
@@ -185,22 +186,22 @@ if cfg.use_pretrain:
     mm_decoder = stage1.mm_decoder
 
 
-# Stage 2
-stage2 = Stage2(
-    mm_encoder=mm_encoder,
-    um_encoder=um_encoder,
-    um_in_idxs=cfg.um_in_idxs,
-)
-stage2 = cfg.trainer_class(
-    exp_name=cfg.exp_name,
-    exp_dir=cfg.exp_dir,
-    model=stage2,
-    train_loader=train_loader,
-    val_loader=val_loader,
-    epochs=cfg.epochs,
-    lr=cfg.lr).run()
-mm_encoder = stage2.mm_encoder
-um_encoder = stage2.um_encoder
+    # Stage 2
+    stage2 = Stage2(
+        mm_encoder=mm_encoder,
+        um_encoder=um_encoder,
+        um_in_idxs=cfg.um_in_idxs,
+    )
+    stage2 = cfg.trainer_class(
+        exp_name=cfg.exp_name,
+        exp_dir=cfg.exp_dir,
+        model=stage2,
+        train_loader=train_loader,
+        val_loader=val_loader,
+        epochs=cfg.epochs,
+        lr=cfg.lr).run()
+    mm_encoder = stage2.mm_encoder
+    um_encoder = stage2.um_encoder
 
 
 # Stage 3
