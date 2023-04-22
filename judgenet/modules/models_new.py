@@ -38,7 +38,7 @@ class LinearNet(nn.Module):
 
     def forward(self, x):
         return self.net(x.to(self.device))
-    
+
 
 class Encoder(nn.Module):
 
@@ -62,7 +62,7 @@ class Encoder(nn.Module):
 
     def forward(self, x):
         return self.linear_net(x.to(self.device))
-    
+
 
 class Predictor(nn.Module):
 
@@ -86,7 +86,7 @@ class Predictor(nn.Module):
 
     def forward(self, x):
         return self.linear_net(x.to(self.device))
-    
+
 
 class PredictorClassification(Predictor):
 
@@ -96,7 +96,7 @@ class PredictorClassification(Predictor):
     @torch.no_grad()
     def predict(self, x):
         return torch.argmax(self.linear_net(x), dim=-1)
-        
+
 
 class PredictorRegression(Predictor):
 
@@ -106,7 +106,7 @@ class PredictorRegression(Predictor):
     @torch.no_grad()
     def predict(self, x):
         return self.linear_net(x)
-    
+
 
 class EncoderPredictor(nn.Module):
 
@@ -127,11 +127,65 @@ class EncoderPredictor(nn.Module):
         return self.predictor(self.encoder(
             x[:, self.in_idxs[0]: self.in_idxs[1]]))
 
+    def loss(self, outputs, labels):
+        return self.predictor.loss(outputs, labels)
+
     @torch.no_grad()
     def predict(self, x):
         x = x.to(self.device)
         return self.predictor.predict(self.encoder(
             x[:, self.in_idxs[0]: self.in_idxs[1]]))
+
+
+class KnowledgeDistiller(nn.Module):
+
+    def __init__(
+            self,
+            student,
+            teacher,
+            student_in_idxs,
+            teacher_in_idxs,
+            temperature=7,
+            alpha=0.3,
+            device=None):
+        super().__init__()
+        self.device = torch.device('cpu') if device is None else device
+        self.temperature = temperature
+        self.alpha = alpha
+        self.student = student
+        self.teacher = teacher
+        self.student_in_idxs = student_in_idxs
+        self.teacher_in_idxs = teacher_in_idxs
+        self.student.train()
+        self.teacher.eval()
+
+    def train(self, mode=True):
+        self.training = mode
+        if mode:
+            self.student.train()
+            self.teacher.eval()
+        else:
+            self.student.eval()
+            self.teacher.eval()
+        return self
+
+    def forward(self, x):
+        x = x.to(self.device)
+        outputs = {}
+        outputs["student"] = self.student(
+            x[:, self.student_in_idxs[0]: self.student_in_idxs[1]])
+        with torch.no_grad():
+            outputs["teacher"] = self.teacher(
+                x[:, self.teacher_in_idxs[0]: self.teacher_in_idxs[1]])
+        return outputs
+
+    def loss(self, outputs, label):
+        p = F.log_softmax(outputs["student"]/self.temperature, dim=1)
+        q = F.softmax(outputs["teacher"]/self.temperature, dim=1)
+        l_kl = F.kl_div(p, q, size_average=False) * \
+            (self.temperature**2) / outputs["student"].shape[0]
+        l_ce = F.cross_entropy(outputs["student"], label)
+        return l_kl * self.alpha + l_ce * (1. - self.alpha)
 
 
 class Stage1(nn.Module):
@@ -246,7 +300,8 @@ class Stage3(nn.Module):
 
     def loss(self, outputs, labels):
         pred_loss = self.mm_predictor.loss(outputs["mm_logits"], labels)
-        latent_loss = F.mse_loss(outputs["mm_latent"].detach(), outputs["um_latent"])
+        latent_loss = F.mse_loss(
+            outputs["mm_latent"].detach(), outputs["um_latent"])
         return pred_loss + self.alpha * latent_loss
 
 
@@ -293,5 +348,6 @@ class Stage4(nn.Module):
 
     def loss(self, outputs, labels):
         pred_loss = self.um_predictor.loss(outputs["um_logits"], labels)
-        latent_loss = F.mse_loss(outputs["mm_latent"].detach(), outputs["um_latent"])
+        latent_loss = F.mse_loss(
+            outputs["mm_latent"].detach(), outputs["um_latent"])
         return pred_loss + self.alpha * latent_loss

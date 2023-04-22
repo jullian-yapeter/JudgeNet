@@ -12,6 +12,10 @@ CONFIG.run_baselines = True
 CONFIG.use_pretrain = True
 CONFIG.use_finetune = True
 
+# Baseline Configs
+CONFIG.kd_temperature = 7
+CONFIG.kd_alpha = 0.3
+
 # Dataloader Configs
 CONFIG.dataset_class = IEMOCAPDataset
 CONFIG.train_split = 0.8
@@ -30,6 +34,7 @@ CONFIG.tester_class = TesterClassification
 
 # Multimodal Model Configs
 CONFIG.mm_in_dim = 768 + 128 + 2048
+CONFIG.mm_in_idxs = (0, 768 + 128 + 2048)
 
 # Unimodal Model Configs
 CONFIG.um_in_dim = 768
