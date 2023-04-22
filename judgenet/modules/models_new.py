@@ -116,7 +116,7 @@ class EncoderPredictor(nn.Module):
             predictor: Predictor,
             in_idxs: Tuple,
             device=None):
-        super.__init__()
+        super().__init__()
         self.device = torch.device('cpu') if device is None else device
         self.encoder = encoder.eval()
         self.predictor = predictor.eval()
@@ -139,18 +139,28 @@ class Stage1(nn.Module):
     def __init__(
             self,
             mm_encoder: Encoder,
-            mm_predictor: PredictorRegression,
+            mm_decoder: PredictorRegression,
             device=None):
-        super.__init__()
+        super().__init__()
         self.device = torch.device('cpu') if device is None else device
         self.mm_encoder = mm_encoder.train()
-        self.mm_predictor = mm_predictor.train()
+        self.mm_decoder = mm_decoder.train()
+
+    def train(self, mode=True):
+        self.training = mode
+        if mode:
+            self.mm_encoder.train()
+            self.mm_decoder.train()
+        else:
+            self.mm_encoder.eval()
+            self.mm_decoder.eval()
+        return self
 
     def forward(self, x):
         outputs = {}
         x = x.to(self.device)
         outputs["x"] = x
-        outputs["reconstruction"] = self.mm_predictor(self.mm_encoder(x))
+        outputs["reconstruction"] = self.mm_decoder(self.mm_encoder(x))
         return outputs
 
     def loss(self, outputs, labels):
@@ -163,13 +173,23 @@ class Stage2(nn.Module):
             self,
             mm_encoder: Encoder,
             um_encoder: Encoder,
-            um_idxs: Tuple,
+            um_in_idxs: Tuple,
             device=None):
-        super.__init__()
+        super().__init__()
         self.device = torch.device('cpu') if device is None else device
         self.mm_encoder = mm_encoder.eval()
         self.um_encoder = um_encoder.train()
-        self.um_idxs = um_idxs
+        self.um_in_idxs = um_in_idxs
+
+    def train(self, mode=True):
+        self.training = mode
+        if mode:
+            self.mm_encoder.eval()
+            self.um_encoder.train()
+        else:
+            self.mm_encoder.eval()
+            self.um_encoder.eval()
+        return self
 
     def forward(self, x):
         outputs = {}
@@ -177,7 +197,7 @@ class Stage2(nn.Module):
         with torch.no_grad():
             outputs["mm_latent"] = self.mm_encoder(x)
         outputs["um_latent"] = self.um_encoder(
-            x[:, self.um_idxs[0], self.um_idxs[1]])
+            x[:, self.um_in_idxs[0]: self.um_in_idxs[1]])
         return outputs
 
     def loss(self, outputs, labels):
@@ -191,16 +211,28 @@ class Stage3(nn.Module):
             mm_encoder: Encoder,
             mm_predictor: Predictor,
             um_encoder: Encoder,
-            um_idxs: Tuple,
+            um_in_idxs: Tuple,
             alpha: float = 0.1,
             device=None):
-        super.__init__()
+        super().__init__()
         self.device = torch.device('cpu') if device is None else device
         self.mm_encoder = mm_encoder.train()
         self.mm_predictor = mm_predictor.train()
         self.um_encoder = um_encoder.train()
-        self.um_idxs = um_idxs
+        self.um_in_idxs = um_in_idxs
         self.alpha = alpha
+
+    def train(self, mode=True):
+        self.training = mode
+        if mode:
+            self.mm_encoder.train()
+            self.mm_predictor.train()
+            self.um_encoder.train()
+        else:
+            self.mm_encoder.eval()
+            self.mm_predictor.eval()
+            self.um_encoder.eval()
+        return self
 
     def forward(self, x):
         x = x.to(self.device)
@@ -209,7 +241,7 @@ class Stage3(nn.Module):
         outputs["mm_latent"] = mm_latent
         outputs["mm_logits"] = self.mm_predictor(mm_latent)
         outputs["um_latent"] = self.um_encoder(
-            x[:, self.um_idxs[0], self.um_idxs[1]])
+            x[:, self.um_in_idxs[0]: self.um_in_idxs[1]])
         return outputs
 
     def loss(self, outputs, labels):
@@ -225,16 +257,28 @@ class Stage4(nn.Module):
             mm_encoder: Encoder,
             um_encoder: Encoder,
             um_predictor: Predictor,
-            um_idxs: Tuple,
+            um_in_idxs: Tuple,
             alpha: float = 0.1,
             device=None):
-        super.__init__()
+        super().__init__()
         self.device = torch.device('cpu') if device is None else device
         self.mm_encoder = mm_encoder.eval()
         self.um_encoder = um_encoder.train()
         self.um_predictor = um_predictor.train()
-        self.um_idxs = um_idxs
+        self.um_in_idxs = um_in_idxs
         self.alpha = alpha
+
+    def train(self, mode=True):
+        self.training = mode
+        if mode:
+            self.mm_encoder.eval()
+            self.um_encoder.train()
+            self.um_predictor.train()
+        else:
+            self.mm_encoder.eval()
+            self.um_encoder.eval()
+            self.um_predictor.eval()
+        return self
 
     def forward(self, x):
         x = x.to(self.device)
@@ -242,7 +286,7 @@ class Stage4(nn.Module):
         with torch.no_grad():
             outputs["mm_latent"] = self.mm_encoder(x)
         um_latent = self.um_encoder(
-            x[:, self.um_idxs[0], self.um_idxs[1]])
+            x[:, self.um_in_idxs[0]: self.um_in_idxs[1]])
         outputs["um_latent"] = um_latent
         outputs["um_logits"] = self.um_predictor(um_latent)
         return outputs
