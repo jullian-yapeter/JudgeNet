@@ -1,6 +1,7 @@
 from judgenet.modules.dataloader import IEMOCAPDataset
+from judgenet.modules.models import PredictorClassification
 from judgenet.stages.train import Trainer
-from judgenet.stages.test import TesterClassification
+from judgenet.stages.test import TesterMulticlassClassification
 from judgenet.utils.general import AttrDict
 
 CONFIG = AttrDict()
@@ -30,7 +31,7 @@ CONFIG.stage3_alpha = 0.1
 CONFIG.stage4_alpha = 0.1
 
 # Tester Configs
-CONFIG.tester_class = TesterClassification
+CONFIG.tester_class = TesterMulticlassClassification
 
 # Multimodal Model Configs
 CONFIG.mm_in_dim = 768 + 128 + 2048
@@ -41,6 +42,7 @@ CONFIG.um_in_dim = 768
 CONFIG.um_in_idxs = (0, 768)
 
 # Common Model Configs
+CONFIG.predictor_class = PredictorClassification
 CONFIG.emb_dim = 64
 CONFIG.hidden_dim = 64
 CONFIG.n_hidden_layers = 1

@@ -1,12 +1,8 @@
-import copy
-from typing import List
+from typing import Tuple
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.distributions.independent import Independent
-from torch.distributions.normal import Normal
-from torchrl.modules import TanhNormal
 
 
 class LinearNet(nn.Module):
@@ -19,8 +15,6 @@ class LinearNet(nn.Module):
             dropout_rate: float,
             device=None):
         super().__init__()
-        # self.device = torch.device(
-        #     'mps' if torch.backends.mps.is_available() else 'cpu')
         self.device = torch.device('cpu') if device is None else device
         net_layers = nn.ModuleList()
         net_layers.append(nn.Linear(in_dim, hidden_dim))
@@ -38,65 +32,15 @@ class LinearNet(nn.Module):
         # Weights initialization
         def _weights_init(m):
             if isinstance(m, nn.Linear):
-                nn.init.xavier_normal_(m.weight)
+                nn.init.kaiming_uniform_(m.weight)
                 m.bias.data.zero_()
         self.apply(_weights_init)
 
     def forward(self, x):
         return self.net(x.to(self.device))
 
-    def predict(self, x):
-        with torch.no_grad():
-            pred = torch.argmax(self.forward(x), dim=-1)
-        return pred
 
-
-class MLENet(nn.Module):
-    def __init__(
-            self,
-            in_dim: int,
-            hidden_dim: int,
-            n_hidden_layers: int,
-            dropout_rate: float,
-            device=None):
-        super().__init__()
-        self.device = torch.device('cpu') if device is None else device
-        self.linearNet = LinearNet(in_dim,
-                                   2,
-                                   hidden_dim,
-                                   n_hidden_layers,
-                                   dropout_rate,
-                                   device)
-
-    def forward(self, x):
-        x = self.linearNet(x)
-        mu = x[:, 0].view(-1, 1)
-        log_sigma = x[:, 1].view(-1, 1)
-        return Independent(Normal(mu, log_sigma.exp()), 1)
-    
-    def loss(self, pred_dist, label):
-        loss = -1 * pred_dist.log_prob(label).mean()
-        return loss
-    
-    def predict(self, x):
-        with torch.no_grad():
-            x = self.linearNet(x)
-            mu = x[:, 0].view(-1, 1)
-            log_sigma = x[:, 1].view(-1, 1)
-            dist = Independent(Normal(mu, log_sigma.exp()), 1)
-        return mu, dist
-
-
-class TanhMLENet(MLENet):
-    
-    def forward(self, x):
-        x = self.linearNet(x)
-        mu = x[:, 0].view(-1, 1)
-        log_sigma = x[:, 1].view(-1, 1)
-        return TanhNormal(mu, log_sigma.exp(), min=0.0, max=1.0)
-
-
-class JudgeNetAE(nn.Module):
+class Encoder(nn.Module):
 
     def __init__(
             self,
@@ -108,280 +52,302 @@ class JudgeNetAE(nn.Module):
             device=None):
         super().__init__()
         self.device = torch.device('cpu') if device is None else device
-        self.multimodal_encoder = LinearNet(
+        self.linear_net = LinearNet(
             in_dim=in_dim,
             out_dim=emb_dim,
             hidden_dim=hidden_dim,
             n_hidden_layers=n_hidden_layers,
             dropout_rate=dropout_rate
         )
-        self.multimodal_decoder = LinearNet(
-            in_dim=emb_dim,
-            out_dim=in_dim,
-            hidden_dim=hidden_dim,
-            n_hidden_layers=n_hidden_layers,
-            dropout_rate=dropout_rate
-        )
-        self.mse_loss = nn.MSELoss(reduction='mean')
 
     def forward(self, x):
-        x = x.to(self.device)
-        return self.multimodal_decoder(self.multimodal_encoder(x))
+        return self.linear_net(x.to(self.device))
 
-    def loss(self, pred, original):
-        return self.mse_loss(pred, original)
-    
 
-class JudgeNetDistill(nn.Module):
+class Predictor(nn.Module):
 
     def __init__(
             self,
-            in_names: List[str],
-            in_dims: List[int],
-            emb_dim: int,
-            hidden_dim: int,
-            n_hidden_layers: int,
-            dropout_rate: float,
-            multimodal_encoder: nn.Module,
-            device=None):
-        super().__init__()
-        self.device = torch.device('cpu') if device is None else device
-        self.unimodal_encoders = nn.ModuleDict()
-        self.unimodal_indices = {}
-        cur_index = 0
-        for in_name, in_dim in zip(in_names, in_dims):
-            self.unimodal_indices[in_name] = (cur_index, cur_index + in_dim)
-            cur_index += in_dim
-            self.unimodal_encoders[in_name] = LinearNet(
-                in_dim=in_dim,
-                out_dim=emb_dim,
-                hidden_dim=hidden_dim,
-                n_hidden_layers=n_hidden_layers,
-                dropout_rate=dropout_rate
-            )
-        self.multimodal_encoder = multimodal_encoder.eval()
-        self.mse_loss = nn.MSELoss(reduction='mean')
-
-    def forward(self, x):
-        x = x.to(self.device)
-        outputs = {}
-        for name in self.unimodal_encoders:
-            start_idx, end_idx = self.unimodal_indices[name]
-            unimodal_input = x[:, start_idx: end_idx]
-            outputs[name] = self.unimodal_encoders[name](unimodal_input)
-        with torch.no_grad():
-            multimodal_emb = self.multimodal_encoder(x)
-        outputs["multimodal"] = multimodal_emb
-        return outputs
-
-    def loss(self, outputs):
-        loss = 0
-        multimodal_emb = outputs["multimodal"].detach()
-        for name in self.unimodal_encoders:
-            loss += self.mse_loss(
-                outputs[name], multimodal_emb
-            )
-        return loss
-
-class JudgeNetEncoderDecoder(nn.Module):
-    def __init__(
-            self,
-            in_dim: int,
             emb_dim: int,
             out_dim: int,
             hidden_dim: int,
             n_hidden_layers: int,
             dropout_rate: float,
-            mode: str,
             device=None):
         super().__init__()
         self.device = torch.device('cpu') if device is None else device
-        self.unimodal_indices = {}
-        self.in_dim = in_dim
-        self.encoder = LinearNet(
-            in_dim=in_dim,
-            out_dim=emb_dim,
-            hidden_dim=hidden_dim,
-            n_hidden_layers=n_hidden_layers,
-            dropout_rate=dropout_rate
-        )
-        self.predictor = LinearNet(
+        self.linear_net = LinearNet(
             in_dim=emb_dim,
             out_dim=out_dim,
             hidden_dim=hidden_dim,
             n_hidden_layers=n_hidden_layers,
             dropout_rate=dropout_rate
         )
-        self.ce_loss = nn.CrossEntropyLoss(reduction="mean")
-        self.mode = mode
+
+    def forward(self, x):
+        return self.linear_net(x.to(self.device))
+
+
+class PredictorClassification(Predictor):
+
+    def loss(self, outputs, labels):
+        return F.cross_entropy(outputs, labels)
+
+    @torch.no_grad()
+    def predict(self, x):
+        return torch.argmax(self.linear_net(x), dim=-1)
+
+
+class PredictorRegression(Predictor):
+
+    def loss(self, outputs, labels):
+        return F.mse_loss(outputs, labels)
+
+    @torch.no_grad()
+    def predict(self, x):
+        return self.linear_net(x)
+
+
+class EncoderPredictor(nn.Module):
+
+    def __init__(
+            self,
+            encoder: Encoder,
+            predictor: Predictor,
+            in_idxs: Tuple,
+            device=None):
+        super().__init__()
+        self.device = torch.device('cpu') if device is None else device
+        self.encoder = encoder.eval()
+        self.predictor = predictor.eval()
+        self.in_idxs = in_idxs
 
     def forward(self, x):
         x = x.to(self.device)
-        if self.mode == "lexical":
-            x = x[:,:self.in_dim]
-        return self.predictor(self.encoder(x))
+        return self.predictor(self.encoder(
+            x[:, self.in_idxs[0]: self.in_idxs[1]]))
 
-    def loss(self, outputs, label):
-        return self.ce_loss(
-            outputs, label
-        )
-    
+    def loss(self, outputs, labels):
+        return self.predictor.loss(outputs, labels)
+
+    @torch.no_grad()
     def predict(self, x):
-        with torch.no_grad():
-            if self.mode == "lexical":
-                x = x[:,:self.in_dim]
-            emb = self.encoder(x)
-            return torch.argmax(self.predictor(emb), dim=-1)
+        x = x.to(self.device)
+        return self.predictor.predict(self.encoder(
+            x[:, self.in_idxs[0]: self.in_idxs[1]]))
 
 
 class KnowledgeDistiller(nn.Module):
 
-    def __init__(self, student, teacher):
+    def __init__(
+            self,
+            student,
+            teacher,
+            student_in_idxs,
+            teacher_in_idxs,
+            temperature=7,
+            alpha=0.3,
+            device=None):
         super().__init__()
+        self.device = torch.device('cpu') if device is None else device
+        self.temperature = temperature
+        self.alpha = alpha
         self.student = student
         self.teacher = teacher
+        self.student_in_idxs = student_in_idxs
+        self.teacher_in_idxs = teacher_in_idxs
         self.student.train()
         self.teacher.eval()
 
+    def train(self, mode=True):
+        self.training = mode
+        if mode:
+            self.student.train()
+            self.teacher.eval()
+        else:
+            self.student.eval()
+            self.teacher.eval()
+        return self
+
     def forward(self, x):
         x = x.to(self.device)
         outputs = {}
-        outputs["student"] = self.student(x)
+        outputs["student"] = self.student(
+            x[:, self.student_in_idxs[0]: self.student_in_idxs[1]])
         with torch.no_grad():
-            outputs["teacher"] = self.teacher(x)
+            outputs["teacher"] = self.teacher(
+                x[:, self.teacher_in_idxs[0]: self.teacher_in_idxs[1]])
         return outputs
 
-    def loss(self, outputs, label, temperature=7, alpha=0.3):
-        p = F.log_softmax(outputs["student"]/temperature, dim=1)
-        q = F.softmax(outputs["teacher"]/temperature, dim=1)
+    def loss(self, outputs, label):
+        p = F.log_softmax(outputs["student"]/self.temperature, dim=1)
+        q = F.softmax(outputs["teacher"]/self.temperature, dim=1)
         l_kl = F.kl_div(p, q, size_average=False) * \
-            (temperature**2) / outputs["student"].shape[0]
+            (self.temperature**2) / outputs["student"].shape[0]
         l_ce = F.cross_entropy(outputs["student"], label)
-        return l_kl * alpha + l_ce * (1. - alpha)
+        return l_kl * self.alpha + l_ce * (1. - self.alpha)
 
 
-class JudgeNetSharedDecoder(nn.Module):
+class Stage1(nn.Module):
 
     def __init__(
             self,
-            in_names: List[str],
-            in_dims: List[int],
-            emb_dim: int,
-            out_dim: int,
-            hidden_dim: int,
-            n_hidden_layers: int,
-            dropout_rate: float,
-            multimodal_encoder: nn.Module,
-            unimodal_encoders: nn.Module,
+            mm_encoder: Encoder,
+            mm_decoder: PredictorRegression,
             device=None):
         super().__init__()
         self.device = torch.device('cpu') if device is None else device
-        self.unimodal_indices = {}
-        cur_index = 0
-        for in_name, in_dim in zip(in_names, in_dims):
-            self.unimodal_indices[in_name] = (cur_index, cur_index + in_dim)
-        self.unimodal_encoders = unimodal_encoders.train()
-        self.multimodal_encoder = multimodal_encoder.train()
-        self.predictor = LinearNet(
-            in_dim=emb_dim,
-            out_dim=out_dim,
-            hidden_dim=hidden_dim,
-            n_hidden_layers=n_hidden_layers,
-            dropout_rate=dropout_rate
-        )
-        self.ce_loss = nn.CrossEntropyLoss(reduction="mean")
-        self.mse_loss = nn.MSELoss(reduction='mean')
+        self.mm_encoder = mm_encoder.train()
+        self.mm_decoder = mm_decoder.train()
+
+    def train(self, mode=True):
+        self.training = mode
+        if mode:
+            self.mm_encoder.train()
+            self.mm_decoder.train()
+        else:
+            self.mm_encoder.eval()
+            self.mm_decoder.eval()
+        return self
+
+    def forward(self, x):
+        outputs = {}
+        x = x.to(self.device)
+        outputs["x"] = x
+        outputs["reconstruction"] = self.mm_decoder(self.mm_encoder(x))
+        return outputs
+
+    def loss(self, outputs, labels):
+        return F.mse_loss(outputs["x"], outputs["reconstruction"])
+
+
+class Stage2(nn.Module):
+
+    def __init__(
+            self,
+            mm_encoder: Encoder,
+            um_encoder: Encoder,
+            um_in_idxs: Tuple,
+            device=None):
+        super().__init__()
+        self.device = torch.device('cpu') if device is None else device
+        self.mm_encoder = mm_encoder.eval()
+        self.um_encoder = um_encoder.train()
+        self.um_in_idxs = um_in_idxs
+
+    def train(self, mode=True):
+        self.training = mode
+        if mode:
+            self.mm_encoder.eval()
+            self.um_encoder.train()
+        else:
+            self.mm_encoder.eval()
+            self.um_encoder.eval()
+        return self
+
+    def forward(self, x):
+        outputs = {}
+        x = x.to(self.device)
+        with torch.no_grad():
+            outputs["mm_latent"] = self.mm_encoder(x)
+        outputs["um_latent"] = self.um_encoder(
+            x[:, self.um_in_idxs[0]: self.um_in_idxs[1]])
+        return outputs
+
+    def loss(self, outputs, labels):
+        return F.mse_loss(outputs["mm_latent"].detach(), outputs["um_latent"])
+
+
+class Stage3(nn.Module):
+
+    def __init__(
+            self,
+            mm_encoder: Encoder,
+            mm_predictor: Predictor,
+            um_encoder: Encoder,
+            um_in_idxs: Tuple,
+            alpha: float = 0.1,
+            device=None):
+        super().__init__()
+        self.device = torch.device('cpu') if device is None else device
+        self.mm_encoder = mm_encoder.train()
+        self.mm_predictor = mm_predictor.train()
+        self.um_encoder = um_encoder.train()
+        self.um_in_idxs = um_in_idxs
+        self.alpha = alpha
+
+    def train(self, mode=True):
+        self.training = mode
+        if mode:
+            self.mm_encoder.train()
+            self.mm_predictor.train()
+            self.um_encoder.train()
+        else:
+            self.mm_encoder.eval()
+            self.mm_predictor.eval()
+            self.um_encoder.eval()
+        return self
 
     def forward(self, x):
         x = x.to(self.device)
         outputs = {}
-        for name in self.unimodal_encoders:
-            start_idx, end_idx = self.unimodal_indices[name]
-            unimodal_input = x[:, start_idx: end_idx]
-            outputs[name] = self.unimodal_encoders[name](unimodal_input)
-        multimodal_emb = self.multimodal_encoder(x)
-        outputs["multimodal"] = multimodal_emb
-        outputs["prediction"] = self.predictor(multimodal_emb)
+        mm_latent = self.mm_encoder(x)
+        outputs["mm_latent"] = mm_latent
+        outputs["mm_logits"] = self.mm_predictor(mm_latent)
+        outputs["um_latent"] = self.um_encoder(
+            x[:, self.um_in_idxs[0]: self.um_in_idxs[1]])
         return outputs
 
-    def loss(self, outputs, label, alpha=0.1):
-        prediction_loss = self.ce_loss(
-            outputs["prediction"], label
-        )
-        teacher_student_loss = 0
-        multimodal_emb = outputs["multimodal"].detach()
-        for name in self.unimodal_encoders:
-            teacher_student_loss += self.mse_loss(
-                outputs[name], multimodal_emb
-            )
-        loss = prediction_loss + alpha * teacher_student_loss
-        return loss
-    
-    def predict(self, x, mode="lexical"):
-        with torch.no_grad():
-            if mode == "multimodal":
-                emb = self.multimodal_encoder(x)
-            else:
-                start_idx, end_idx = self.unimodal_indices[mode]
-                x = x[:, start_idx: end_idx]
-                emb = self.unimodal_encoders[mode](x)
-            return torch.argmax(self.predictor(emb), dim=-1)
+    def loss(self, outputs, labels):
+        pred_loss = self.mm_predictor.loss(outputs["mm_logits"], labels)
+        latent_loss = F.mse_loss(
+            outputs["mm_latent"].detach(), outputs["um_latent"])
+        return pred_loss + self.alpha * latent_loss
 
 
-class JudgeNetFinetune(nn.Module):
+class Stage4(nn.Module):
 
     def __init__(
             self,
-            in_names: List[str],
-            in_dims: List[int],
-            multimodal_encoder: nn.Module,
-            unimodal_encoders: nn.Module,
-            predictor: nn.Module,
-            finetune_modality: str = "lexical",
+            mm_encoder: Encoder,
+            um_encoder: Encoder,
+            um_predictor: Predictor,
+            um_in_idxs: Tuple,
+            alpha: float = 0.1,
             device=None):
         super().__init__()
         self.device = torch.device('cpu') if device is None else device
-        self.finetune_modality = finetune_modality
-        self.unimodal_indices = {}
-        cur_index = 0
-        for in_name, in_dim in zip(in_names, in_dims):
-            self.unimodal_indices[in_name] = (cur_index, cur_index + in_dim)
-        self.multimodal_encoder = multimodal_encoder.eval()
-        self.unimodal_encoders = unimodal_encoders.train()
-        self.predictor = predictor.train()
-        self.ce_loss = nn.CrossEntropyLoss(reduction="mean")
-        self.mse_loss = nn.MSELoss(reduction='mean')
+        self.mm_encoder = mm_encoder.eval()
+        self.um_encoder = um_encoder.train()
+        self.um_predictor = um_predictor.train()
+        self.um_in_idxs = um_in_idxs
+        self.alpha = alpha
+
+    def train(self, mode=True):
+        self.training = mode
+        if mode:
+            self.mm_encoder.eval()
+            self.um_encoder.train()
+            self.um_predictor.train()
+        else:
+            self.mm_encoder.eval()
+            self.um_encoder.eval()
+            self.um_predictor.eval()
+        return self
 
     def forward(self, x):
         x = x.to(self.device)
         outputs = {}
         with torch.no_grad():
-            multimodal_emb = self.multimodal_encoder(x)
-        start_idx, end_idx = self.unimodal_indices[self.finetune_modality]
-        unimodal_input = x[:, start_idx: end_idx]
-        unimodal_emb = self.unimodal_encoders[self.finetune_modality](
-            unimodal_input)
-        outputs["multimodal"] = multimodal_emb
-        outputs["unimodal"] = unimodal_emb
-        outputs["prediction"] = self.predictor(unimodal_emb)
+            outputs["mm_latent"] = self.mm_encoder(x)
+        um_latent = self.um_encoder(
+            x[:, self.um_in_idxs[0]: self.um_in_idxs[1]])
+        outputs["um_latent"] = um_latent
+        outputs["um_logits"] = self.um_predictor(um_latent)
         return outputs
 
-    def loss(self, outputs, label, alpha=0.2):
-        prediction_loss = self.ce_loss(
-            outputs["prediction"], label
-        )
-        teacher_student_loss = self.mse_loss(
-            outputs["unimodal"], outputs["multimodal"].detach()
-        )
-        loss = prediction_loss + alpha * teacher_student_loss
-        return loss
-
-    def predict(self, x, mode="lexical"):
-        with torch.no_grad():
-            if mode == "multimodal":
-                emb = self.multimodal_encoder(x)
-            else:
-                start_idx, end_idx = self.unimodal_indices[mode]
-                x = x[:, start_idx: end_idx]
-                emb = self.unimodal_encoders[mode](x)
-            return torch.argmax(self.predictor(emb), dim=-1)
+    def loss(self, outputs, labels):
+        pred_loss = self.um_predictor.loss(outputs["um_logits"], labels)
+        latent_loss = F.mse_loss(
+            outputs["mm_latent"].detach(), outputs["um_latent"])
+        return pred_loss + self.alpha * latent_loss

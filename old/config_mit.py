@@ -1,24 +1,23 @@
-from judgenet.modules.dataloader import BasicDataset, TedDataset
-from judgenet.modules.models import (JudgeNetAE, JudgeNetDistill,
-                                     JudgeNetFinetune, JudgeNetSharedDecoder, JudgeNetEncoderDecoder)
+from judgenet.modules.models import JudgeNetAE, JudgeNetSharedDecoder, JudgeNetFinetune, JudgeNetDistill, JudgeNetEncoderDecoder
 from judgenet.utils.general import AttrDict
+from judgenet.modules.dataloader import MITInterviewDataset
 
 CONFIG = AttrDict()
 
 # Experiment
-CONFIG.exp_name = "ted"
-CONFIG.exp_dir = "exp/exp_ted"
-CONFIG.unimodal_baseline = True
-CONFIG.multimodal_baseline = False
+CONFIG.exp_name = "mit"
+CONFIG.exp_dir = "exp/exp_mit"
+CONFIG.unimodal_baseline = False
+CONFIG.multimodal_baseline = True
 CONFIG.use_pretrain = False
 CONFIG.use_finetune = False
 
 # Dataset/Loader
-CONFIG.train_split = 0.4
+CONFIG.train_split = 0.8
 CONFIG.val_split = 0.1
-CONFIG.batch_size = 10
+CONFIG.batch_size = 64
 CONFIG.lexical_dim = 768
-CONFIG.prosody_dim = 103
+CONFIG.prosody_dim = 56
 CONFIG.feature_dim = CONFIG.lexical_dim + CONFIG.prosody_dim
 
 # Model
@@ -27,7 +26,7 @@ CONFIG.distill_net_class = JudgeNetDistill
 CONFIG.predictor_class = JudgeNetSharedDecoder
 CONFIG.finetune_class = JudgeNetFinetune
 CONFIG.baseline_class = JudgeNetEncoderDecoder
-CONFIG.dataset_class = TedDataset
+CONFIG.dataset_class = MITInterviewDataset
 CONFIG.in_names = ["lexical", "prosody"]
 CONFIG.in_dims = [CONFIG.lexical_dim, CONFIG.prosody_dim]
 CONFIG.finetune_modality = "lexical"
@@ -38,5 +37,5 @@ CONFIG.n_hidden_layers = 1
 CONFIG.dropout_rate = 0.1
 
 #Trainer
-CONFIG.epochs = 1500
+CONFIG.epochs = 20
 CONFIG.lr = 1e-3

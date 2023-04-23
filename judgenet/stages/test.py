@@ -24,13 +24,23 @@ class Tester():
         return results
 
 
-class TesterClassification(Tester):
+class TesterMulticlassClassification(Tester):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.metrics = {
             "Accuracy": Accuracy(),
-            "F1": F1()
+            "F1": F1(n_cats=4)
+        }
+
+
+class TesterBinaryClassification(Tester):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.metrics = {
+            "Accuracy": Accuracy(),
+            "F1": F1(n_cats=2)
         }
 
 

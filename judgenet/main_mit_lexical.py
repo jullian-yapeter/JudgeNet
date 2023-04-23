@@ -1,9 +1,9 @@
 import copy
 
-from config_new import CONFIG as cfg
+from config_mit_lexical import CONFIG as cfg
 
 from judgenet.modules.dataloader import get_split_dataloaders
-from judgenet.modules.models_new import *
+from judgenet.modules.models import *
 
 # Instantiate Dataloader
 train_loader, val_loader, test_loader = get_split_dataloaders(
@@ -24,7 +24,7 @@ if cfg.run_baselines:
         n_hidden_layers=cfg.n_hidden_layers,
         dropout_rate=cfg.dropout_rate
     )
-    predictor = PredictorClassification(
+    predictor = cfg.predictor_class(
         emb_dim=cfg.emb_dim,
         out_dim=cfg.out_dim,
         hidden_dim=cfg.hidden_dim,
@@ -60,7 +60,7 @@ if cfg.run_baselines:
         n_hidden_layers=cfg.n_hidden_layers,
         dropout_rate=cfg.dropout_rate
     )
-    predictor = PredictorClassification(
+    predictor = cfg.predictor_class(
         emb_dim=cfg.emb_dim,
         out_dim=cfg.out_dim,
         hidden_dim=cfg.hidden_dim,
@@ -96,7 +96,7 @@ if cfg.run_baselines:
         n_hidden_layers=cfg.n_hidden_layers,
         dropout_rate=cfg.dropout_rate
     )
-    predictor = PredictorClassification(
+    predictor = cfg.predictor_class(
         emb_dim=cfg.emb_dim,
         out_dim=cfg.out_dim,
         hidden_dim=cfg.hidden_dim,
@@ -158,7 +158,7 @@ um_encoder = Encoder(
     dropout_rate=cfg.dropout_rate
 )
 
-predictor = PredictorClassification(
+predictor = cfg.predictor_class(
     emb_dim=cfg.emb_dim,
     out_dim=cfg.out_dim,
     hidden_dim=cfg.hidden_dim,

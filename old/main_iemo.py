@@ -69,6 +69,33 @@ def IEMO_experiment():
             model=baseline_net.eval(),
             test_loader=test_loader).run()
         print(stats)
+        if cfg.kd_baseline:
+            print("Running distillation baseline")
+            uni_baseline_net = cfg.baseline_class(
+                in_dim=cfg.lexical_dim,
+                emb_dim=cfg.emb_dim,
+                hidden_dim=cfg.hidden_dim,
+                out_dim=cfg.out_dim,
+                n_hidden_layers=cfg.n_hidden_layers,
+                dropout_rate=cfg.dropout_rate,
+                mode="lexical"
+            )
+            distiller = cfg.kd_class(uni_baseline_net, baseline_net)
+            distiller = Trainer(
+                exp_name=cfg.exp_name,
+                exp_dir=cfg.exp_dir,
+                model=distiller,
+                train_loader=train_loader,
+                val_loader=val_loader,
+                epochs=cfg.epochs,
+                lr=cfg.lr).run()
+            stats = TesterClassification(
+                exp_name=cfg.exp_name,
+                exp_dir=cfg.exp_dir,
+                model=distiller.eval(),
+                test_loader=test_loader).run()
+            print("distillation baseline")
+            print(stats)
     else:
         if cfg.use_pretrain:
             # Initialize and pre-train multimodal components
