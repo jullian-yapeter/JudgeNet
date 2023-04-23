@@ -1,5 +1,6 @@
 from judgenet.modules.dataloader import MITInterviewDataset
-from judgenet.modules.models import PredictorClassification
+from judgenet.modules.models import (KnowledgeDistillerClassification,
+                                     PredictorClassification)
 from judgenet.stages.train import Trainer
 from judgenet.stages.test import TesterBinaryClassification
 from judgenet.utils.general import AttrDict
@@ -13,9 +14,10 @@ CONFIG.run_baselines = True
 CONFIG.use_pretrain = True
 CONFIG.use_finetune = True
 
-# Baseline Configs
-CONFIG.kd_temperature = 7
-CONFIG.kd_alpha = 0.3
+# KD Baseline Configs
+CONFIG.kd_class = KnowledgeDistillerClassification
+CONFIG.kd_temperature = 5
+CONFIG.kd_alpha = 0.5
 
 # Dataloader Configs
 CONFIG.dataset_class = MITInterviewDataset

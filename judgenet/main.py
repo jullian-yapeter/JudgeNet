@@ -108,7 +108,7 @@ if cfg.run_baselines:
         predictor=predictor,
         in_idxs=cfg.um_in_idxs
     )
-    kd_model = KnowledgeDistiller(
+    kd_model = cfg.kd_class(
         student=um_model,
         teacher=mm_model,
         student_in_idxs=cfg.um_in_idxs,
