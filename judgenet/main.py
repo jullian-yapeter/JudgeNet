@@ -1,15 +1,13 @@
 import copy
 import os
 
-from config_iemocap_lexical import CONFIG as cfg
+from config_iemocap_acoustic import CONFIG as cfg
+from torch.utils.data import DataLoader
 
 from judgenet.modules.dataloader import get_split_dataloaders
 from judgenet.modules.models import *
 from judgenet.utils.results import Results
 from judgenet.values.constants import test_metrics_filename
-
-# from config_mit_lexical import CONFIG as cfg
-# from config_ted_lexical import CONFIG as cfg
 
 
 # Exp Results
@@ -24,6 +22,11 @@ for _ in range(cfg.n_runs):
         train=cfg.train_split,
         val=cfg.val_split
     )
+    if hasattr(cfg, "pretrain_dataset_class"):
+        pretrain_loader = DataLoader(
+            cfg.pretrain_dataset_class(), batch_size=cfg.batch_size, shuffle=True, drop_last=False)
+    else:
+        pretrain_loader = train_loader
 
     if cfg.run_baselines:
 
@@ -126,8 +129,6 @@ for _ in range(cfg.n_runs):
         kd_model = cfg.kd_class(
             student=um_model,
             teacher=mm_model,
-            student_in_idxs=cfg.um_in_idxs,
-            teacher_in_idxs=cfg.mm_in_idxs,
             temperature=cfg.kd_temperature,
             alpha=cfg.kd_alpha
         )
@@ -194,7 +195,7 @@ for _ in range(cfg.n_runs):
             exp_dir=cfg.exp_dir,
             stage_name="stage1",
             model=stage1,
-            train_loader=train_loader,
+            train_loader=pretrain_loader,
             val_loader=val_loader,
             epochs=cfg.epochs,
             lr=cfg.lr).run()
@@ -212,7 +213,7 @@ for _ in range(cfg.n_runs):
             exp_dir=cfg.exp_dir,
             stage_name="stage2",
             model=stage2,
-            train_loader=train_loader,
+            train_loader=pretrain_loader,
             val_loader=val_loader,
             epochs=cfg.epochs,
             lr=cfg.lr).run()

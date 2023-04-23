@@ -18,7 +18,7 @@ CONFIG.use_finetune = True
 # KD Baseline Configs
 CONFIG.kd_class = KnowledgeDistillerClassification
 CONFIG.kd_temperature = 5
-CONFIG.kd_alpha = 0.5
+CONFIG.kd_alpha = 0.3
 
 # Dataloader Configs
 CONFIG.dataset_class = IEMOCAPDataset
@@ -28,10 +28,10 @@ CONFIG.batch_size = 64
 
 # Trainer Configs
 CONFIG.trainer_class = Trainer
-CONFIG.epochs = 50 #50
+CONFIG.epochs = 20
 CONFIG.lr = 1e-3
 CONFIG.stage3_alpha = 0.3
-CONFIG.stage4_alpha = 0.5
+CONFIG.stage4_alpha = 0.3
 
 # Tester Configs
 CONFIG.tester_class = TesterMulticlassClassification

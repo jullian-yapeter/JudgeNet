@@ -124,8 +124,48 @@ class IEMOCAPDataset(object):
             return features, label
 
 
+class IEMOCAPBimodalDataset(object):
+    def __init__(self):
+        self.dataset = pd.read_csv("data/iemocap/dataset_balanced.csv")
+        self.cache = {}
+
+    def __len__(self):
+        return len(self.dataset)
+
+    # Perform pooling over visual features here
+    def __getitem__(self, index):
+        # First check cache for this index
+        if index in self.cache:
+            return self.cache[index]
+
+        # If not in cache, get features from this row
+        else:
+            row = self.dataset.iloc[index]
+
+            speaker = row["speakers"]
+
+            acoustic_features = np.load(
+                "data/iemocap/" + row["acoustic_features"][1:])
+
+            # Perform mean pooling on acoustic features
+            acoustic_features_pooled = np.mean(acoustic_features, axis=0)
+
+            lexical_features = np.load(
+                "data/iemocap/" + row["lexical_features"][1:])
+            label = row["emotion_labels"]
+
+            lexical_tensor = torch.from_numpy(lexical_features)
+            acoustic_tensor = torch.from_numpy(acoustic_features_pooled)
+            features = torch.cat(
+                [lexical_tensor, acoustic_tensor], dim=-1).to(torch.float)
+
+            # Add row to cache
+            self.cache[index] = (features, label)
+            return features, label
+
+
 def get_split_dataloaders(data, dataset_class, batch_size, train=0.8, val=None):
-    if dataset_class == TedDataset or dataset_class == MITInterviewDataset or dataset_class == IEMOCAPDataset:
+    if dataset_class in (TedDataset, MITInterviewDataset, IEMOCAPDataset, IEMOCAPBimodalDataset):
         dataset = dataset_class()
     else:
         dataset = dataset_class(data)

@@ -143,8 +143,6 @@ class KnowledgeDistiller(nn.Module):
             self,
             student,
             teacher,
-            student_in_idxs,
-            teacher_in_idxs,
             temperature=7,
             alpha=0.3,
             device=None):
@@ -154,8 +152,6 @@ class KnowledgeDistiller(nn.Module):
         self.alpha = alpha
         self.student = student
         self.teacher = teacher
-        self.student_in_idxs = student_in_idxs
-        self.teacher_in_idxs = teacher_in_idxs
         self.student.train()
         self.teacher.eval()
 
@@ -172,11 +168,9 @@ class KnowledgeDistiller(nn.Module):
     def forward(self, x):
         x = x.to(self.device)
         outputs = {}
-        outputs["student"] = self.student(
-            x[:, self.student_in_idxs[0]: self.student_in_idxs[1]])
+        outputs["student"] = self.student(x)
         with torch.no_grad():
-            outputs["teacher"] = self.teacher(
-                x[:, self.teacher_in_idxs[0]: self.teacher_in_idxs[1]])
+            outputs["teacher"] = self.teacher(x)
         return outputs
 
 
