@@ -2,6 +2,8 @@ import copy
 import os
 
 from config_mit_lexical import CONFIG as cfg
+# from config_ted_lexical import CONFIG as cfg
+
 
 from judgenet.modules.dataloader import get_split_dataloaders
 from judgenet.modules.models import *

@@ -40,8 +40,8 @@ class TedDataset(Dataset):
     
     def __getitem__(self, index):
         row = self.dataset.iloc[index]
-        lexical_features = torch.load(f"data/ted/{row['lexical_feature_path']}")
-        audio_features = torch.load(f"data/ted/{row['audio_feature_path']}")
+        lexical_features = torch.load(f"data/{row['lexical_feature_path']}")
+        audio_features = torch.load(f"data/{row['audio_feature_path']}")
         negative_proportion = row["neg_count"] / row["pos_count"]
         if negative_proportion < self.negative_ratio_threshold:
             label = 0
@@ -67,7 +67,7 @@ class MITInterviewDataset(Dataset):
         score = self.scores[index]
         # Threshold: 5.14
 
-        return torch.cat((self.lexical_features[index], self.audio_features[index]),dim=-1).to(torch.float), score
+        return torch.cat((self.lexical_features[index], self.audio_features[index]),dim=-1).to(torch.float), score.to(torch.float)[None]
     
 class IEMOCAPDataset(object):
     def __init__(self):
