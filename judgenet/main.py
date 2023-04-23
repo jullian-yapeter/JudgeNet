@@ -1,9 +1,15 @@
 import copy
+import os
 
 from config_iemocap_lexical import CONFIG as cfg
 
 from judgenet.modules.dataloader import get_split_dataloaders
 from judgenet.modules.models import *
+from judgenet.utils.file import write_json
+from judgenet.utils.general import AttrDict
+
+# Exp Results
+exp_results = AttrDict()
 
 # Instantiate Dataloader
 train_loader, val_loader, test_loader = get_split_dataloaders(
@@ -51,6 +57,7 @@ if cfg.run_baselines:
         test_loader=test_loader
     ).run()
     print(f"um_baseline: \n{stats}")
+    exp_results["um_baseline"] = stats
 
     # Run Multimodal Baseline
     mm_encoder = Encoder(
@@ -87,6 +94,7 @@ if cfg.run_baselines:
         test_loader=test_loader
     ).run()
     print(f"mm_baseline: \n{stats}")
+    exp_results["mm_baseline"] = stats
 
     # Run Knowledge Distillation Baseline
     um_encoder = Encoder(
@@ -131,6 +139,7 @@ if cfg.run_baselines:
         test_loader=test_loader
     ).run()
     print(f"kd_baseline: \n{stats}")
+    exp_results["kd_baseline"] = stats
 
 
 # Instantiate Encoders and Predictors
@@ -238,6 +247,7 @@ stats = cfg.tester_class(
     test_loader=test_loader
 ).run()
 print(f"post-stage3: \n{stats}")
+exp_results["post-stage3"] = stats
 
 if cfg.use_finetune:
     # Stage 4
@@ -274,3 +284,6 @@ if cfg.use_finetune:
         test_loader=test_loader
     ).run()
     print(f"post-stage4: \n{stats}")
+    exp_results["post-stage4"] = stats
+
+write_json(exp_results, os.path.join(cfg.exp_dir, "exp_results.json"))

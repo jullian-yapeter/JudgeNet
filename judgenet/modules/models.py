@@ -178,18 +178,18 @@ class KnowledgeDistiller(nn.Module):
             outputs["teacher"] = self.teacher(
                 x[:, self.teacher_in_idxs[0]: self.teacher_in_idxs[1]])
         return outputs
-    
+
 
 class KnowledgeDistillerClassification(KnowledgeDistiller):
 
     def loss(self, outputs, label):
         p = F.log_softmax(outputs["student"]/self.temperature, dim=1)
         q = F.softmax(outputs["teacher"]/self.temperature, dim=1)
-        l_kl = F.kl_div(p, q, size_average=False) * \
+        l_kl = F.kl_div(p, q, reduction='sum') * \
             (self.temperature**2) / outputs["student"].shape[0]
         l_ce = F.cross_entropy(outputs["student"], label)
         return l_kl * self.alpha + l_ce * (1. - self.alpha)
-    
+
 
 class KnowledgeDistillerRegression(KnowledgeDistiller):
 
