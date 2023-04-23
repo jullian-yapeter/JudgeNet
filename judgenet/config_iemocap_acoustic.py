@@ -9,7 +9,7 @@ CONFIG = AttrDict()
 
 # Experiment Configs
 CONFIG.exp_name = "iemo"
-CONFIG.exp_dir = "exp/exp_iemo_lexical"
+CONFIG.exp_dir = "exp/exp_iemo_acoustic"
 CONFIG.n_runs = 10
 CONFIG.run_baselines = True
 CONFIG.use_pretrain = True
@@ -41,8 +41,8 @@ CONFIG.mm_in_dim = 768 + 128 + 2048
 CONFIG.mm_in_idxs = (0, 768 + 128 + 2048)
 
 # Unimodal Model Configs
-CONFIG.um_in_dim = 768
-CONFIG.um_in_idxs = (0, 768)
+CONFIG.um_in_dim = 128
+CONFIG.um_in_idxs = (768, 768 + 128)
 
 # Common Model Configs
 CONFIG.predictor_class = PredictorClassification

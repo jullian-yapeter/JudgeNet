@@ -256,6 +256,39 @@ for _ in range(cfg.n_runs):
     exp_results.update_results("post-stage3", stats)
 
     if cfg.use_finetune:
+        # Stage 4 No Regularization
+        stage4_NoReg = Stage4(
+            mm_encoder=copy.deepcopy(mm_encoder),
+            um_encoder=copy.deepcopy(um_encoder),
+            um_predictor=copy.deepcopy(predictor),
+            um_in_idxs=cfg.um_in_idxs,
+            alpha=0.0
+        )
+        stage4_NoReg = cfg.trainer_class(
+            exp_name=cfg.exp_name,
+            exp_dir=cfg.exp_dir,
+            stage_name="stage4-NoReg",
+            model=stage4_NoReg,
+            train_loader=train_loader,
+            val_loader=val_loader,
+            epochs=cfg.epochs,
+            lr=cfg.lr).run()
+
+        # Post Stage 4 No Regularization Test
+        stage_4_NoReg_model = EncoderPredictor(
+            encoder=copy.deepcopy(stage4_NoReg.um_encoder),
+            predictor=copy.deepcopy(stage4_NoReg.um_predictor),
+            in_idxs=cfg.um_in_idxs
+        )
+        stats = cfg.tester_class(
+            exp_name=cfg.exp_name,
+            exp_dir=cfg.exp_dir,
+            model=stage_4_NoReg_model,
+            test_loader=test_loader
+        ).run()
+        print(f"post-stage4-NoReg: \n{stats}")
+        exp_results.update_results("post-stage4-NoReg", stats)
+
         # Stage 4
         stage4 = Stage4(
             mm_encoder=mm_encoder,

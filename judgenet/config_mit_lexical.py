@@ -9,7 +9,7 @@ CONFIG = AttrDict()
 
 # Experiment Configs
 CONFIG.exp_name = "mit"
-CONFIG.exp_dir = "exp/exp_mit"
+CONFIG.exp_dir = "exp/exp_mit_lexical"
 CONFIG.n_runs = 10
 CONFIG.run_baselines = True
 CONFIG.use_pretrain = True

@@ -9,7 +9,7 @@ CONFIG = AttrDict()
 
 # Experiment Configs
 CONFIG.exp_name = "ted"
-CONFIG.exp_dir = "exp/exp_ted"
+CONFIG.exp_dir = "exp/exp_ted_lexical"
 CONFIG.n_runs = 10
 CONFIG.run_baselines = True
 CONFIG.use_pretrain = True
@@ -30,8 +30,8 @@ CONFIG.batch_size = 64
 CONFIG.trainer_class = Trainer
 CONFIG.epochs = 200
 CONFIG.lr = 1e-3
-CONFIG.stage3_alpha = 0.4
-CONFIG.stage4_alpha = 0.15
+CONFIG.stage3_alpha = 0.3
+CONFIG.stage4_alpha = 0.5
 
 # Tester Configs
 CONFIG.tester_class = TesterBinaryClassification
