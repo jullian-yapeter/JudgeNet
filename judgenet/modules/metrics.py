@@ -58,7 +58,7 @@ class Precision():
         '''
         precisions = {cat: 0 for cat in range(self.n_cats)}
         for curlabel in range(self.n_cats):
-            if self.predicted_positive == 0:
+            if self.predicted_positive[curlabel] == 0:
                 precisions[curlabel] = 1.0
             else:
                 precisions[curlabel] = self.true_positive[curlabel] / \
@@ -97,7 +97,7 @@ class Recall():
         '''
         recalls = {cat: 0 for cat in range(self.n_cats)}
         for curlabel in range(self.n_cats):
-            if self.gt_positive == 0:
+            if self.gt_positive[curlabel] == 0:
                 recalls[curlabel] = 1.0
             else:
                 recalls[curlabel] = self.true_positive[curlabel] / \
