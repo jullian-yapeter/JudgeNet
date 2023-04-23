@@ -7,16 +7,15 @@ import json
 from bs4 import BeautifulSoup
 import requests
 
-import vggish.vggish_input as vggish_input
-import vggish.vggish_params as vggish_params
-import vggish.vggish_postprocess as vggish_postprocess
-import vggish.vggish_slim as vggish_slim
+import data_processing.vggish.vggish_input as vggish_input
+import data_processing.vggish.vggish_params as vggish_params
+import data_processing.vggish.vggish_postprocess as vggish_postprocess
+import data_processing.vggish.vggish_slim as vggish_slim
 
-vggish_root = "data_processing/ted_pipeline/vggish"
+vggish_root = "data_processing/vggish"
 
 def extractVGGish(fileName):
   examples_batch = vggish_input.wavfile_to_examples(fileName)
-  print("Extracted examples from audio")
 
   # Prepare a postprocessor to munge the model embeddings.
   pproc = vggish_postprocess.Postprocessor(f'{vggish_root}/vggish_pca_params.npz')

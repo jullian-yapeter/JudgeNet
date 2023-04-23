@@ -1,12 +1,1 @@
 url,prosody_feature_path,lexical_feature_path,pos_count,neg_count
-https://www.ted.com/talks/ken_robinson_says_schools_kill_creativity,features/prosody/prosody_0.pt,features/lexical/0.pt,91538,2312
-https://www.ted.com/talks/al_gore_on_averting_climate_crisis,features/prosody/prosody_1.pt,features/lexical/1.pt,2169,767
-https://www.ted.com/talks/david_pogue_says_simplicity_sells,features/prosody/prosody_2.pt,features/lexical/2.pt,2327,497
-https://www.ted.com/talks/majora_carter_s_tale_of_urban_renewal,features/prosody/prosody_3.pt,features/lexical/3.pt,3487,241
-https://www.ted.com/talks/hans_rosling_shows_the_best_stats_you_ve_ever_seen,features/prosody/prosody_4.pt,features/lexical/4.pt,25062,558
-https://www.ted.com/talks/tony_robbins_asks_why_we_do_what_we_do,features/prosody/prosody_5.pt,features/lexical/5.pt,13617,1739
-https://www.ted.com/talks/julia_sweeney_on_letting_go_of_god,features/prosody/prosody_6.pt,features/lexical/6.pt,4910,1088
-https://www.ted.com/talks/joshua_prince_ramus_on_seattle_s_library,features/prosody/prosody_7.pt,features/lexical/7.pt,879,145
-https://www.ted.com/talks/dan_dennett_s_response_to_rick_warren,features/prosody/prosody_8.pt,features/lexical/8.pt,3179,767
-https://www.ted.com/talks/rick_warren_on_a_life_of_purpose,features/prosody/prosody_9.pt,features/lexical/9.pt,6456,1871
-https://www.ted.com/talks/majora_carter_s_tale_of_urban_renewal,ted/features/audio/audio_3.pt,ted/features/lexical/lexical_3.pt,3487,241

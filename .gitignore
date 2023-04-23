@@ -9,6 +9,15 @@ __pycache__/
 # Experiments
 exp/
 .env/
+
+# Data
 data/mit_interview/features/lexical_batched/
+data/mit_interview/features/vggish/
+data/mit_interview/*.csv
+data_processing/mit_pipeline/audio/
+data_processing/vggish/vggish_pca_params.npz
+data_processing/vggish/vggish_model.ckpt
+
+
 data/iemocap/features
 .DS_Store

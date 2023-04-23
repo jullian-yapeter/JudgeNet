@@ -17,7 +17,7 @@
 
 import numpy as np
 
-import vggish.vggish_params as vggish_params
+import data_processing.vggish.vggish_params as vggish_params
 
 class Postprocessor(object):
   """Post-processes VGGish embeddings.

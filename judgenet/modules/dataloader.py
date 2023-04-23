@@ -41,20 +41,20 @@ class TedDataset(Dataset):
     def __getitem__(self, index):
         row = self.dataset.iloc[index]
         lexical_features = torch.load(f"data/ted/{row['lexical_feature_path']}")
-        prosody_features = torch.load(f"data/ted/{row['prosody_feature_path']}")
+        audio_features = torch.load(f"data/ted/{row['audio_feature_path']}")
         negative_proportion = row["neg_count"] / row["pos_count"]
         if negative_proportion < self.negative_ratio_threshold:
             label = 0
         else:
             label = 1
-        return torch.cat((lexical_features, prosody_features),dim=-1).to(torch.float), label
+        return torch.cat((lexical_features, audio_features),dim=-1).to(torch.float), label
         
 
 class MITInterviewDataset(Dataset):
     def __init__(self):
         self.scores = torch.load("data/mit_interview/features/scores.pt")
         self.lexical_features = torch.load("data/mit_interview/features/prosody.pt")
-        self.prosody_features = torch.load("data/mit_interview/features/lexical.pt")
+        self.audio_features = torch.load("data/mit_interview/features/audio.pt")
     
     def __len__(self):
         return len(self.scores)
@@ -66,7 +66,7 @@ class MITInterviewDataset(Dataset):
         else:
             label = 0
 
-        return torch.cat((self.lexical_features[index], self.prosody_features[index]),dim=-1).to(torch.float), label
+        return torch.cat((self.lexical_features[index], self.audio_features[index]),dim=-1).to(torch.float), label
     
 class IEMOCAPDataset(object):
     def __init__(self):
