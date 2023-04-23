@@ -1,6 +1,6 @@
 import os
 
-from judgenet.modules.metrics import F1, R_2, Accuracy
+from judgenet.modules.metrics import F1, R_2, RSS, TSS, Accuracy
 from judgenet.utils.file import write_json
 from judgenet.values.constants import test_metrics_filename
 
@@ -50,4 +50,6 @@ class TesterRegression(Tester):
         super().__init__(*args, **kwargs)
         self.metrics = {
             "R_2": R_2(),
+            "RSS": RSS(),
+            "TSS": TSS()
         }

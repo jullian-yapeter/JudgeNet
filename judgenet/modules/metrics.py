@@ -1,4 +1,5 @@
 import torch
+import torch.nn.functional as F
 
 
 class Accuracy():
@@ -138,33 +139,103 @@ class F1():
         return f1_sum / self.n_cats
 
 
+# class R_2():
+#     '''R Squared metric.
+#     '''
+
+#     def __init__(self):
+#         self.rss = 0
+#         self.sum_of_preds = 0
+#         self.sum_of_preds_squared = 0
+#         self.sum_of_labels = 0
+#         self.n_total = 0
+
+#     def update(self, preds, labels):
+#         '''Update the metric given a new batch of prediction-label pairs.
+#         '''
+#         assert len(preds) == len(labels)
+#         self.rss += torch.sum(torch.square(preds - labels)).item()
+#         self.sum_of_preds += torch.sum(preds).item()
+#         self.sum_of_preds_squared += torch.sum(torch.square(preds)).item()
+#         self.sum_of_labels += torch.sum(labels).item()
+#         self.n_total += len(labels)
+
+#     def finalize(self):
+#         '''Finalizes the accuracy computation and returns the metric value.
+#         Returns:
+#             value [float]: binary recall of the model
+#         '''
+#         label_mean = self.sum_of_labels / self.n_total
+#         tss = self.sum_of_preds_squared - (
+#             2 * label_mean * self.sum_of_preds) + (self.n_total * label_mean * label_mean)
+#         return 1 - (self.rss / tss)
+
+
 class R_2():
     '''R Squared metric.
     '''
 
     def __init__(self):
-        self.rss = 0
-        self.sum_of_preds = 0
-        self.sum_of_preds_squared = 0
-        self.sum_of_labels = 0
-        self.n_total = 0
+        self.rss = RSS()
+        self.tss = TSS()
 
     def update(self, preds, labels):
         '''Update the metric given a new batch of prediction-label pairs.
         '''
         assert len(preds) == len(labels)
-        self.rss += torch.sum(torch.square(preds - labels)).item()
-        self.sum_of_preds += torch.sum(preds).item()
-        self.sum_of_preds_squared += torch.sum(torch.square(preds)).item()
-        self.sum_of_labels += torch.sum(labels).item()
-        self.n_total += len(labels)
+        self.rss.update(preds, labels)
+        self.tss.update(preds, labels)
 
     def finalize(self):
         '''Finalizes the accuracy computation and returns the metric value.
         Returns:
             value [float]: binary recall of the model
         '''
-        label_mean = self.sum_of_labels / self.n_total
-        tss = self.sum_of_preds_squared - (
-            2 * label_mean * self.sum_of_preds) + (self.n_total * label_mean ** 2)
-        return 1 - (self.rss / tss)
+        return 1 - (self.rss.finalize() / self.tss.finalize())
+
+
+class RSS():
+    '''RSS metric.
+    '''
+
+    def __init__(self):
+        self.rss = 0
+        self.n_total = 0
+
+    def update(self, preds, labels):
+        '''Update the metric given a new batch of prediction-label pairs.
+        '''
+        assert len(preds) == len(labels)
+        self.rss += F.mse_loss(preds, labels).item()
+        self.n_total += 1
+
+    def finalize(self):
+        '''Finalizes the accuracy computation and returns the metric value.
+        Returns:
+            value [float]: binary recall of the model
+        '''
+        return self.rss / self.n_total
+
+
+class TSS():
+    '''
+    '''
+
+    def __init__(self):
+        self.tss = 0
+        self.hardcode_mean = 0.5426
+        self.n_total = 0
+
+    def update(self, preds, labels):
+        '''Update the metric given a new batch of prediction-label pairs.
+        '''
+        assert len(preds) == len(labels)
+        self.tss += F.mse_loss(torch.full_like(labels, self.hardcode_mean), labels).item()
+        self.n_total += 1
+
+    def finalize(self):
+        '''Finalizes the accuracy computation and returns the metric value.
+        Returns:
+            value [float]: binary recall of the model
+        '''
+        return self.tss / self.n_total
