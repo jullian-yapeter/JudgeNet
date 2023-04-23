@@ -194,7 +194,8 @@ class KnowledgeDistillerClassification(KnowledgeDistiller):
 class KnowledgeDistillerRegression(KnowledgeDistiller):
 
     def loss(self, outputs, label):
-        l_distill = F.mse_loss(outputs["student"], outputs["teacher"])
+        l_distill = F.mse_loss(
+            outputs["student"]/self.temperature, outputs["teacher"]/self.temperature)
         l_ce = F.mse_loss(outputs["student"], label)
         return l_distill * self.alpha + l_ce * (1. - self.alpha)
 
@@ -313,7 +314,7 @@ class Stage3(nn.Module):
         pred_loss = self.mm_predictor.loss(outputs["mm_logits"], labels)
         latent_loss = F.mse_loss(
             outputs["mm_latent"].detach(), outputs["um_latent"])
-        return pred_loss + self.alpha * latent_loss
+        return (1 - self.alpha) * pred_loss + self.alpha * latent_loss
 
 
 class Stage4(nn.Module):
@@ -361,4 +362,4 @@ class Stage4(nn.Module):
         pred_loss = self.um_predictor.loss(outputs["um_logits"], labels)
         latent_loss = F.mse_loss(
             outputs["mm_latent"].detach(), outputs["um_latent"])
-        return pred_loss + self.alpha * latent_loss
+        return (1 - self.alpha) * pred_loss + self.alpha * latent_loss

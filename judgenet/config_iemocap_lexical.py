@@ -10,6 +10,7 @@ CONFIG = AttrDict()
 # Experiment Configs
 CONFIG.exp_name = "iemo"
 CONFIG.exp_dir = "exp/exp_iemo"
+CONFIG.n_runs = 5
 CONFIG.run_baselines = True
 CONFIG.use_pretrain = True
 CONFIG.use_finetune = True
@@ -27,10 +28,10 @@ CONFIG.batch_size = 64
 
 # Trainer Configs
 CONFIG.trainer_class = Trainer
-CONFIG.epochs = 200
+CONFIG.epochs = 5 #50
 CONFIG.lr = 1e-3
-CONFIG.stage3_alpha = 0.4
-CONFIG.stage4_alpha = 0.15
+CONFIG.stage3_alpha = 0.3
+CONFIG.stage4_alpha = 0.5
 
 # Tester Configs
 CONFIG.tester_class = TesterMulticlassClassification

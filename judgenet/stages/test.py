@@ -1,8 +1,4 @@
-import os
-
 from judgenet.modules.metrics import F1, R_2, RSS, TSS, Accuracy
-from judgenet.utils.file import write_json
-from judgenet.values.constants import test_metrics_filename
 
 
 class Tester():
@@ -19,8 +15,6 @@ class Tester():
             for metric_name in self.metrics:
                 self.metrics[metric_name].update(preds, labels)
         results = {metric_name: metric.finalize() for metric_name, metric in self.metrics.items()}
-        write_json(results, os.path.join(
-            self.exp_dir, f"{self.exp_name}_{test_metrics_filename}"))
         return results
 
 

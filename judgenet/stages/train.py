@@ -14,6 +14,7 @@ class Trainer():
         self,
         exp_name,
         exp_dir,
+        stage_name,
         model,
         train_loader,
         val_loader,
@@ -22,6 +23,7 @@ class Trainer():
     ):
         self.exp_name = exp_name
         self.exp_dir = exp_dir
+        self.stage_name = stage_name
         self.model = model
         self.train_loader = train_loader
         self.val_loader = val_loader
@@ -51,5 +53,5 @@ class Trainer():
                 print(
                     f"ep:{epoch + 1}, loss:{np.mean(ep_losses)}, val_loss:{np.mean(val_losses)}")
         torch.save(self.model.state_dict(), os.path.join(
-            self.exp_dir, f"{self.exp_name}_{final_model_filename}"))
+            self.exp_dir, f"{self.exp_name}_{self.stage_name}_{final_model_filename}"))
         return copy.deepcopy(self.model)

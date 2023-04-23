@@ -10,6 +10,7 @@ CONFIG = AttrDict()
 # Experiment Configs
 CONFIG.exp_name = "ted"
 CONFIG.exp_dir = "exp/exp_ted"
+CONFIG.n_runs = 10
 CONFIG.run_baselines = True
 CONFIG.use_pretrain = True
 CONFIG.use_finetune = True
