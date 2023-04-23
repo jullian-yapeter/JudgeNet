@@ -55,18 +55,19 @@ class MITInterviewDataset(Dataset):
         self.scores = torch.load("data/mit_interview/features/scores.pt")
         self.lexical_features = torch.load("data/mit_interview/features/lexical.pt")
         self.audio_features = torch.load("data/mit_interview/features/audio.pt")
+
+        # Normalize scores from 0-1
+        normalized_scores = (self.scores - min(self.scores))/(max(self.scores)-min(self.scores))
+        self.scores = normalized_scores
     
     def __len__(self):
         return len(self.scores)
     
     def __getitem__(self, index):
         score = self.scores[index]
-        if score > 5.14:
-            label = 1
-        else:
-            label = 0
+        # Threshold: 5.14
 
-        return torch.cat((self.lexical_features[index], self.audio_features[index]),dim=-1).to(torch.float), label
+        return torch.cat((self.lexical_features[index], self.audio_features[index]),dim=-1).to(torch.float), score
     
 class IEMOCAPDataset(object):
     def __init__(self):
