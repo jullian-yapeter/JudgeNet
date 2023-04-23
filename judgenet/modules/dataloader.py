@@ -53,7 +53,7 @@ class TedDataset(Dataset):
 class MITInterviewDataset(Dataset):
     def __init__(self):
         self.scores = torch.load("data/mit_interview/features/scores.pt")
-        self.lexical_features = torch.load("data/mit_interview/features/prosody.pt")
+        self.lexical_features = torch.load("data/mit_interview/features/lexical.pt")
         self.audio_features = torch.load("data/mit_interview/features/audio.pt")
     
     def __len__(self):
