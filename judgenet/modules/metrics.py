@@ -1,18 +1,6 @@
 import torch
 
 
-def MSE(pred_mu, label):
-    return ((pred_mu - label) ** 2).mean()
-
-
-def entropy(pred_dist):
-    return (pred_dist.entropy()).mean()
-
-
-def log_prob(pred_dist, label):
-    return (pred_dist.log_prob(label)).mean()
-
-
 class Accuracy():
     '''Accuracy metric. ratio of correct predictions to total predictions
     Attributes:
@@ -39,36 +27,6 @@ class Accuracy():
         if self.total == 0:
             return 1.0
         return self.correct / self.total
-
-
-class BinaryPrecision():
-    '''Binary Precision metric. ratio of true positive predictions to total
-    positive predictions.
-    Attributes:
-        true_positive [int]: number of true positive predictions
-        predicted_positive [int]: number of predicted positive predictions
-    '''
-
-    def __init__(self):
-        self.true_positive = 0
-        self.predicted_positive = 0
-
-    def update(self, preds, labels):
-        '''Update the metric given a new batch of prediction-label pairs.
-        '''
-        assert len(preds) == len(labels)
-        true_idxs = torch.where(labels == 1)
-        self.true_positive += torch.sum(preds[true_idxs]).item()
-        self.predicted_positive += torch.sum(preds).item()
-
-    def finalize(self) -> float:
-        '''Finalizes the accuracy computation and returns the metric value.
-        Returns:
-            value [float]: binary precision of the model
-        '''
-        if self.predicted_positive == 0:
-            return 1.0
-        return self.true_positive / self.predicted_positive
     
 
 class Precision():
@@ -90,56 +48,71 @@ class Precision():
         assert len(preds) == len(labels)
         for curlabel in range(self.n_cats):
             true_idxs = torch.where(labels == curlabel)
-            self.true_positive[curlabel] += torch.sum(preds[true_idxs]).item()
-            self.predicted_positive[curlabel] += torch.sum(preds).item()
+            self.true_positive[curlabel] += torch.sum(preds[true_idxs] == curlabel).item()
+            self.predicted_positive[curlabel] += torch.sum(preds == curlabel).item()
 
     def finalize(self) -> float:
         '''Finalizes the accuracy computation and returns the metric value.
         Returns:
             value [float]: binary precision of the model
         '''
-        if self.predicted_positive == 0:
-            return 1.0
-        return self.true_positive / self.predicted_positive
+        precisions = {cat: 0 for cat in range(self.n_cats)}
+        for curlabel in range(self.n_cats):
+            if self.predicted_positive == 0:
+                precisions[curlabel] = 1.0
+            else:
+                precisions[curlabel] = self.true_positive[curlabel] / \
+                    self.predicted_positive[curlabel]
+        return precisions
 
 
-class BinaryRecall():
-    '''Binary Recall metric. ratio of true positive predictions to total
+class Recall():
+    '''Recall metric. ratio of true positive predictions to total
     positive labels.
     Attributes:
         true_positive [int]: number of true positive predictions
         gt_positive [int]: number of positive labels
     '''
 
-    def __init__(self):
-        self.true_positive = 0
-        self.gt_positive = 0
+    def __init__(self, n_cats):
+        self.n_cats = n_cats
+        self.true_positive = {cat: 0 for cat in range(n_cats)}
+        self.gt_positive = {cat: 0 for cat in range(n_cats)}
 
     def update(self, preds, labels):
         '''Update the metric given a new batch of prediction-label pairs.
         '''
         assert len(preds) == len(labels)
-        true_idxs = torch.where(labels == 1)
-        self.true_positive += torch.sum(preds[true_idxs]).item()
-        self.gt_positive += torch.sum(labels).item()
+        for curlabel in range(self.n_cats):
+            true_idxs = torch.where(labels == curlabel)
+            self.true_positive[curlabel] += torch.sum(
+                preds[true_idxs] == curlabel).item()
+            self.gt_positive[curlabel] += torch.sum(
+                labels == curlabel).item()
 
-    def finalize(self):
+    def finalize(self) -> float:
         '''Finalizes the accuracy computation and returns the metric value.
         Returns:
-            value [float]: binary recall of the model
+            value [float]: binary precision of the model
         '''
-        if self.gt_positive == 0:
-            return 1.0
-        return self.true_positive / self.gt_positive
+        recalls = {cat: 0 for cat in range(self.n_cats)}
+        for curlabel in range(self.n_cats):
+            if self.gt_positive == 0:
+                recalls[curlabel] = 1.0
+            else:
+                recalls[curlabel] = self.true_positive[curlabel] / \
+                    self.gt_positive[curlabel]
+        return recalls
+    
 
-
-class BinaryF1():
-    '''Binary F1 metric.
+class F1():
+    '''F1 metric.
     '''
 
-    def __init__(self):
-        self.precision = BinaryPrecision()
-        self.recall = BinaryRecall()
+    def __init__(self, n_cats):
+        self.n_cats = n_cats
+        self.precision = Precision(n_cats)
+        self.recall = Recall(n_cats)
 
     def update(self, preds, labels):
         '''Update the metric given a new batch of prediction-label pairs.
@@ -155,6 +128,40 @@ class BinaryF1():
         '''
         final_precision = self.precision.finalize()
         final_recall = self.recall.finalize()
-        if final_precision + final_recall == 0:
-            return 1.0
-        return (2 * final_precision * final_recall) / (final_precision + final_recall)
+        f1_sum = 0
+        for curlabel in range(self.n_cats):
+            f1_sum += ((2 * final_precision[curlabel] * final_recall[curlabel]) /
+                       (final_precision[curlabel] + final_recall[curlabel]))
+        return f1_sum / self.n_cats
+
+
+class R_2():
+    '''R Squared metric.
+    '''
+
+    def __init__(self):
+        self.rss = 0
+        self.sum_of_preds = 0
+        self.sum_of_preds_squared = 0
+        self.sum_of_labels = 0
+        self.n_total = 0
+
+    def update(self, preds, labels):
+        '''Update the metric given a new batch of prediction-label pairs.
+        '''
+        assert len(preds) == len(labels)
+        self.rss += torch.sum(torch.square(preds - labels)).item()
+        self.sum_of_preds += torch.sum(preds).item()
+        self.sum_of_preds_squared += torch.sum(torch.square(preds)).item()
+        self.sum_of_labels += torch.sum(labels).item()
+        self.n_total += len(labels)
+
+    def finalize(self):
+        '''Finalizes the accuracy computation and returns the metric value.
+        Returns:
+            value [float]: binary recall of the model
+        '''
+        label_mean = self.sum_of_labels / self.n_total
+        tss = self.sum_of_preds_squared - (
+            2 * label_mean * self.sum_of_preds) + (self.n_total * label_mean ** 2)
+        return 1 - (self.rss / tss)
