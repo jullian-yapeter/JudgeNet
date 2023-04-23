@@ -27,10 +27,10 @@ CONFIG.batch_size = 64
 
 # Trainer Configs
 CONFIG.trainer_class = Trainer
-CONFIG.epochs = 100
+CONFIG.epochs = 200
 CONFIG.lr = 1e-3
-CONFIG.stage3_alpha = 0.3
-CONFIG.stage4_alpha = 0.3
+CONFIG.stage3_alpha = 0.4
+CONFIG.stage4_alpha = 0.15
 
 # Tester Configs
 CONFIG.tester_class = TesterMulticlassClassification
