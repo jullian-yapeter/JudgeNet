@@ -130,7 +130,10 @@ class F1():
         final_recall = self.recall.finalize()
         f1_sum = 0
         for curlabel in range(self.n_cats):
-            f1_sum += ((2 * final_precision[curlabel] * final_recall[curlabel]) /
+            if final_precision[curlabel] + final_recall[curlabel] == 0:
+                f1_sum += 1.0
+            else:
+                f1_sum += ((2 * final_precision[curlabel] * final_recall[curlabel]) /
                        (final_precision[curlabel] + final_recall[curlabel]))
         return f1_sum / self.n_cats
 
