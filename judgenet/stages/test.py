@@ -1,4 +1,4 @@
-from judgenet.modules.metrics import F1, R_2, RSS, Accuracy, TSS
+from judgenet.modules.metrics import F1, R_2, RSS, Accuracy, TSS, AUC
 
 
 class Tester():
@@ -24,9 +24,18 @@ class TesterMulticlassClassification(Tester):
         super().__init__(*args, **kwargs)
         self.metrics = {
             "Accuracy": Accuracy(),
-            "F1": F1(n_cats=4)
+            "F1": F1(n_cats=4),
         }
 
+
+class TesterThreeClassification(Tester):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.metrics = {
+            "Accuracy": Accuracy(),
+            "F1": F1(n_cats=3),
+        }
 
 class TesterBinaryClassification(Tester):
 
@@ -34,7 +43,8 @@ class TesterBinaryClassification(Tester):
         super().__init__(*args, **kwargs)
         self.metrics = {
             "Accuracy": Accuracy(),
-            "F1": F1(n_cats=2)
+            "F1": F1(n_cats=2),
+            "AUC": AUC()
         }
 
 

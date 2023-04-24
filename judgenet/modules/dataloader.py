@@ -62,15 +62,39 @@ class TedDataset(Dataset):
         return features, label
         
 
-class MITInterviewDataset(Dataset):
+class MITInterviewClassificationDataset(Dataset):
     def __init__(self):
-        self.scores = torch.load("data/mit_interview/features/EngagingTone.pt")
+        self.scores = torch.load("data/mit_interview/features/Excited.pt")
         self.lexical_features = torch.load("data/mit_interview/features/lexical.pt")
         self.audio_features = torch.load("data/mit_interview/features/audio.pt")
 
         # Normalize scores from 0-1
-        self.scores = (self.scores - min(self.scores))/(max(self.scores)-min(self.scores))
+        # self.scores = (self.scores - min(self.scores))/(max(self.scores)-min(self.scores))
+        # self.scores = (self.scores - torch.mean(self.scores)) / \
+        #     (torch.std(self.scores))
+        self.scores = self.bin_values(self.scores)
     
+    def bin_values(self, tensor):
+        # define the bins and their boundaries
+        bins = [
+            torch.quantile(tensor, 0.0),
+            torch.quantile(tensor, 0.8),
+            torch.quantile(tensor, 1.0)
+        ]
+
+        # create a new tensor to hold the binned values
+        binned_tensor = torch.zeros_like(tensor)
+
+        # iterate over the bins
+        for i in range(len(bins)-1):
+            # select values that fall within the current bin's boundaries
+            bin_mask = (tensor >= bins[i]) & (tensor < bins[i+1])
+
+            # assign the corresponding bin number to the selected values
+            binned_tensor[bin_mask] = i
+
+        return binned_tensor
+
     def __len__(self):
         return len(self.scores)
     
@@ -78,7 +102,27 @@ class MITInterviewDataset(Dataset):
         score = self.scores[index]
         # Threshold: 5.14
 
-        return torch.cat((self.lexical_features[index], self.audio_features[index]),dim=-1).to(torch.float), score.to(torch.float)[None]
+        return torch.cat((self.lexical_features[index], self.audio_features[index]),dim=-1).to(torch.float), score.to(torch.long)
+    
+
+class MITInterviewDataset(Dataset):
+    def __init__(self):
+        self.scores = torch.load("data/mit_interview/features/Excited.pt")
+        self.lexical_features = torch.load("data/mit_interview/features/lexical.pt")
+        self.audio_features = torch.load("data/mit_interview/features/audio.pt")
+
+        # Normalize scores from 0-1
+        self.scores = (self.scores - min(self.scores))/(max(self.scores)-min(self.scores))
+        # self.scores = (self.scores - torch.mean(self.scores)) / \
+        #     (torch.std(self.scores))
+    
+    def __len__(self):
+        return len(self.scores)
+    
+    def __getitem__(self, index):
+        score = self.scores[index]
+        # Threshold: 5.14
+        return torch.cat((self.lexical_features[index], self.audio_features[index]),dim=-1).to(torch.float), score[None].to(torch.float)
     
 class IEMOCAPDataset(object):
     def __init__(self):
@@ -164,9 +208,9 @@ class IEMOCAPBimodalDataset(object):
 
 
 def get_split_dataloaders(data, dataset_class, batch_size, train=0.8, val=None):
-    if dataset_class in (TedDataset, MITInterviewDataset, IEMOCAPDataset, IEMOCAPBimodalDataset):
+    if dataset_class in (TedDataset, MITInterviewDataset, MITInterviewClassificationDataset, IEMOCAPDataset, IEMOCAPBimodalDataset):
         dataset = dataset_class()
-    else:
+    else: 
         dataset = dataset_class(data)
     if val is None:
         train_dataset, test_dataset = split_dataset(dataset, train=train)

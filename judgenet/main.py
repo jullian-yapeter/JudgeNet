@@ -9,7 +9,7 @@ from judgenet.utils.results import Results
 from judgenet.values.constants import test_metrics_filename
 
 
-from config_mit_lexical import CONFIG as cfg
+from config_mit_acoustic_classification import CONFIG as cfg
 
 
 # Exp Results
