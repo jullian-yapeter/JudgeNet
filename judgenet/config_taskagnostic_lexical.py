@@ -9,7 +9,7 @@ CONFIG = AttrDict()
 
 # Experiment Configs
 CONFIG.exp_name = "taskagnostic_lexical"
-CONFIG.exp_dir = "exp/exp_taskagnostic_lexical"
+CONFIG.exp_dir = f"exp/{CONFIG.exp_name}"
 CONFIG.n_runs = 3
 CONFIG.run_baselines = True
 CONFIG.use_pretrain = True
@@ -17,7 +17,7 @@ CONFIG.use_finetune = True
 
 # KD Baseline Configs
 CONFIG.kd_class = KnowledgeDistillerClassification
-CONFIG.kd_temperature = 5
+CONFIG.kd_temperature = 7
 CONFIG.kd_alpha = 0.3
 
 # Dataloader Configs
@@ -29,7 +29,7 @@ CONFIG.batch_size = 64
 
 # Trainer Configs
 CONFIG.trainer_class = Trainer
-CONFIG.epochs = 20
+CONFIG.epochs = 10
 CONFIG.lr = 1e-3
 CONFIG.stage3_alpha = 0.3
 CONFIG.stage4_alpha = 0.3

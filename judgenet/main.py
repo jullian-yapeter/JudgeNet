@@ -1,13 +1,15 @@
 import copy
 import os
 
-from config_iemocap_acoustic import CONFIG as cfg
 from torch.utils.data import DataLoader
 
 from judgenet.modules.dataloader import get_split_dataloaders
 from judgenet.modules.models import *
 from judgenet.utils.results import Results
 from judgenet.values.constants import test_metrics_filename
+
+
+from config_iemocap_lexical import CONFIG as cfg
 
 
 # Exp Results
@@ -326,4 +328,4 @@ for _ in range(cfg.n_runs):
         print(f"post-stage4: \n{stats}")
         exp_results.update_results("post-stage4", stats)
 
-exp_results.finalize_results(os.path.join(cfg.exp_dir, test_metrics_filename))
+exp_results.finalize_results(os.path.join(cfg.exp_dir, f"{cfg.exp_name}_{test_metrics_filename}"))
