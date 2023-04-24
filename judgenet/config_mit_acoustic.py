@@ -10,7 +10,7 @@ CONFIG = AttrDict()
 # Experiment Configs
 CONFIG.exp_name = "mit_acoustic"
 CONFIG.exp_dir = f"exp/{CONFIG.exp_name}"
-CONFIG.n_runs = 3
+CONFIG.n_runs = 10
 CONFIG.run_baselines = True
 CONFIG.use_pretrain = True
 CONFIG.use_finetune = True
