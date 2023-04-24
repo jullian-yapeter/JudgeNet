@@ -64,13 +64,12 @@ class TedDataset(Dataset):
 
 class MITInterviewDataset(Dataset):
     def __init__(self):
-        self.scores = torch.load("data/mit_interview/features/scores.pt")
+        self.scores = torch.load("data/mit_interview/features/EngagingTone.pt")
         self.lexical_features = torch.load("data/mit_interview/features/lexical.pt")
         self.audio_features = torch.load("data/mit_interview/features/audio.pt")
 
         # Normalize scores from 0-1
-        normalized_scores = (self.scores - min(self.scores))/(max(self.scores)-min(self.scores))
-        self.scores = normalized_scores
+        self.scores = (self.scores - min(self.scores))/(max(self.scores)-min(self.scores))
     
     def __len__(self):
         return len(self.scores)

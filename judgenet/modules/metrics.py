@@ -206,8 +206,8 @@ class RSS():
         '''Update the metric given a new batch of prediction-label pairs.
         '''
         assert len(preds) == len(labels)
-        self.rss += F.mse_loss(preds, labels).item()
-        self.n_total += 1
+        self.rss += F.mse_loss(preds, labels, reduction="sum").item()
+        self.n_total += len(labels)
 
     def finalize(self):
         '''Finalizes the accuracy computation and returns the metric value.
@@ -223,15 +223,23 @@ class TSS():
 
     def __init__(self):
         self.tss = 0
-        self.hardcode_mean = 0.5426
+        # self.hardcode_mean = 5.0  # RecommendHiring
+        # self.hardcode_mean = 5.0  # Engaging
+        # self.hardcode_mean = 5.372117  # Smiled
+        # self.hardcode_mean = (5.0 - 2.030430) / \
+        #     (7.000000 - 3.000000)  # RecommendHiring
+        self.hardcode_mean = (5.0 - 2.030430) / \
+            (6.745900 - 2.144769)  # Engaging
+        # self.hardcode_mean = (5.372117 - 2.030430) / \
+        #     (7.000000 - 1.500000)  # Smiled
         self.n_total = 0
 
     def update(self, preds, labels):
         '''Update the metric given a new batch of prediction-label pairs.
         '''
         assert len(preds) == len(labels)
-        self.tss += F.mse_loss(torch.full_like(labels, self.hardcode_mean), labels).item()
-        self.n_total += 1
+        self.tss += F.mse_loss(torch.full_like(labels, self.hardcode_mean), labels, reduction="sum").item()
+        self.n_total += len(labels)
 
     def finalize(self):
         '''Finalizes the accuracy computation and returns the metric value.

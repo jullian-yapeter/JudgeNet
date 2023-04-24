@@ -10,7 +10,7 @@ CONFIG = AttrDict()
 # Experiment Configs
 CONFIG.exp_name = "mit_acoustic"
 CONFIG.exp_dir = f"exp/{CONFIG.exp_name}"
-CONFIG.n_runs = 10
+CONFIG.n_runs = 3
 CONFIG.run_baselines = True
 CONFIG.use_pretrain = True
 CONFIG.use_finetune = True
@@ -22,14 +22,14 @@ CONFIG.kd_alpha = 0.3
 
 # Dataloader Configs
 CONFIG.dataset_class = MITInterviewDataset
-CONFIG.train_split = 0.8
-CONFIG.val_split = 0.1
+CONFIG.train_split = 0.5
+CONFIG.val_split = 0.2
 CONFIG.batch_size = 64
 
 # Trainer Configs
 CONFIG.trainer_class = Trainer
-CONFIG.epochs = 10
-CONFIG.lr = 1e-3
+CONFIG.epochs = 2000
+CONFIG.lr = 5e-3
 CONFIG.stage3_alpha = 0.3
 CONFIG.stage4_alpha = 0.3
 
@@ -49,5 +49,5 @@ CONFIG.predictor_class = PredictorRegression
 CONFIG.emb_dim = 64
 CONFIG.hidden_dim = 64
 CONFIG.n_hidden_layers = 1
-CONFIG.dropout_rate = 0.1
+CONFIG.dropout_rate = 0.7
 CONFIG.out_dim = 1

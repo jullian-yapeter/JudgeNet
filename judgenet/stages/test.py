@@ -1,4 +1,4 @@
-from judgenet.modules.metrics import F1, R_2, RSS, TSS, Accuracy
+from judgenet.modules.metrics import F1, R_2, RSS, Accuracy, TSS
 
 
 class Tester():
