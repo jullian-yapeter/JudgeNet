@@ -1,5 +1,6 @@
 import torch
 import torch.nn.functional as F
+from sklearn.metrics import roc_auc_score
 
 
 class Accuracy():
@@ -228,10 +229,11 @@ class TSS():
         # self.hardcode_mean = 5.372117  # Smiled
         # self.hardcode_mean = (5.0 - 2.030430) / \
         #     (7.000000 - 3.000000)  # RecommendHiring
-        self.hardcode_mean = (5.0 - 2.030430) / \
-            (6.745900 - 2.144769)  # Engaging
+        # self.hardcode_mean = (5.0 - 2.030430) / \
+        #     (6.745900 - 2.144769)  # Engaging
         # self.hardcode_mean = (5.372117 - 2.030430) / \
         #     (7.000000 - 1.500000)  # Smiled
+        self.hardcode_mean = 0
         self.n_total = 0
 
     def update(self, preds, labels):
@@ -247,3 +249,26 @@ class TSS():
             value [float]: binary recall of the model
         '''
         return self.tss / self.n_total
+
+
+class AUC():
+    '''
+    '''
+
+    def __init__(self):
+        self.preds = []
+        self.labels = []
+
+    def update(self, preds, labels):
+        '''Update the metric given a new batch of prediction-label pairs.
+        '''
+        assert len(preds) == len(labels)
+        self.preds.append(preds)
+        self.labels.append(labels)
+
+    def finalize(self):
+        '''Finalizes the accuracy computation and returns the metric value.
+        Returns:
+            value [float]: binary recall of the model
+        '''
+        return roc_auc_score(torch.cat(self.labels), torch.cat(self.preds))
