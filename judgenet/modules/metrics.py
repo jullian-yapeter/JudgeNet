@@ -231,9 +231,9 @@ class TSS():
         #     (7.000000 - 3.000000)  # RecommendHiring
         # self.hardcode_mean = (5.0 - 2.030430) / \
         #     (6.745900 - 2.144769)  # Engaging
-        # self.hardcode_mean = (5.372117 - 2.030430) / \
-        #     (7.000000 - 1.500000)  # Smiled
-        self.hardcode_mean = 0
+        self.hardcode_mean = (5.372117 - 2.030430) / \
+            (7.000000 - 1.500000)  # Smiled
+        # self.hardcode_mean = 0
         self.n_total = 0
 
     def update(self, preds, labels):

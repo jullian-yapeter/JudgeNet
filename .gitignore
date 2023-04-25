@@ -17,6 +17,8 @@ data/mit_interview/*.csv
 data_processing/mit_pipeline/audio/
 data_processing/vggish/vggish_pca_params.npz
 data_processing/vggish/vggish_model.ckpt
+*.wav
+*.mp4
 
 
 data/iemocap/features
