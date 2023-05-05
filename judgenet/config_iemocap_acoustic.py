@@ -10,7 +10,7 @@ CONFIG = AttrDict()
 # Experiment Configs
 CONFIG.exp_name = "iemocap_acoustic"
 CONFIG.exp_dir = f"exp/{CONFIG.exp_name}"
-CONFIG.n_runs = 10
+CONFIG.n_runs = 2
 CONFIG.run_baselines = True
 CONFIG.use_pretrain = True
 CONFIG.use_finetune = True
@@ -28,7 +28,7 @@ CONFIG.batch_size = 64
 
 # Trainer Configs
 CONFIG.trainer_class = Trainer
-CONFIG.epochs = 10
+CONFIG.epochs = 100
 CONFIG.lr = 1e-3
 CONFIG.stage3_alpha = 0.3
 CONFIG.stage4_alpha = 0.3
@@ -47,7 +47,7 @@ CONFIG.um_in_idxs = (768, 768 + 128)
 # Common Model Configs
 CONFIG.predictor_class = PredictorClassification
 CONFIG.emb_dim = 64
-CONFIG.hidden_dim = 64
+CONFIG.hidden_dim = 128
 CONFIG.n_hidden_layers = 1
 CONFIG.dropout_rate = 0.1
 CONFIG.out_dim = 4
